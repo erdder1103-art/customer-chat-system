@@ -109,7 +109,7 @@ const currentCopyVersion = db.prepare('SELECT value FROM settings WHERE key=?').
 if (!currentCopyVersion || currentCopyVersion.value !== COPY_VERSION) {
   forceSetting('widget_title', process.env.WIDGET_TITLE || '领取10USDT窗口');
   forceSetting('online_greeting', process.env.WIDGET_GREETING || '你好,领取10U体验金吗？');
-  forceSetting('offline_greeting', process.env.OFFLINE_GREETING || '目前非工作时间,请留下联系方式我们会与你联系协助你领取体验金。');
+  forceSetting('offline_greeting', process.env.OFFLINE_GREETING || '目前非工作时间,请留下联系方式我们会与你联系协助你领取体验金。请提供TG联系方式。或是等工作时间10-22点在来讯息请记住网址。');
   forceSetting('copy_version', COPY_VERSION);
 }
 
