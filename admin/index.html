@@ -1,15 +1,80 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>客服後台</title><style>body{margin:0;font-family:Arial,'Microsoft JhengHei',sans-serif;background:#0f0f0f;color:#fff}.app{display:grid;grid-template-columns:320px 1fr 320px;height:100vh}.side,.note{border-right:1px solid #333;background:#151515;overflow:auto}.note{border-right:0;border-left:1px solid #333;padding:14px}.top{padding:14px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center}.list .item{padding:12px;border-bottom:1px solid #282828;cursor:pointer}.item:hover,.item.active{background:#242424}.small{color:#aaa;font-size:12px}.chat{display:flex;flex-direction:column;min-width:0}.msgs{flex:1;overflow:auto;padding:18px}.msg{max-width:70%;padding:10px 12px;border-radius:12px;margin:8px 0;line-height:1.4}.visitor{background:#2b2b2b}.agent{background:#f4c542;color:#111;margin-left:auto}.send{display:flex;border-top:1px solid #333}.send input{flex:1;padding:14px;background:#1f1f1f;color:#fff;border:0;outline:0}.send button,button{border:0;background:#f4c542;color:#111;font-weight:bold;padding:12px 14px;cursor:pointer;border-radius:8px}textarea,input,select{width:100%;box-sizing:border-box;margin:8px 0;padding:10px;border-radius:8px;border:1px solid #333;background:#202020;color:#fff}label{font-size:13px;color:#ccc}.empty{color:#888;text-align:center;margin-top:40px}@media(max-width:900px){.app{grid-template-columns:1fr}.side,.note{height:35vh}.note{display:none}}</style></head><body><div class="app"><aside class="side"><div class="top"><b>對話列表</b><button onclick="logout()">登出</button></div><div id="list" class="list"></div></aside><main class="chat"><div class="top"><div><b id="title">請選擇對話</b><div class="small" id="sub"></div></div><button onclick="loadConversations()">刷新</button></div><div id="msgs" class="msgs"><div class="empty">左側選擇一個訪客開始回覆</div></div><div class="send"><input id="text" placeholder="輸入回覆內容..."><button onclick="sendMsg()">送出</button></div></main><aside class="note"><h3>備註 / 狀態</h3><label>訪客名稱</label><input id="visitor_name"><label>聯絡方式</label><input id="visitor_contact"><label>狀態</label><select id="status"><option value="open">open</option><option value="pending">pending</option><option value="closed">closed</option></select><label>指派客服</label><input id="assigned_to" placeholder="例如 kefu1"><label>內部備註</label><textarea id="note" rows="10" placeholder="這裡的備註只給內部看"></textarea><button onclick="saveNote()">儲存備註</button></aside></div><script src="/socket.io/socket.io.js"></script><script>
-let current='', conversations=[]; const socket=io();
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>客服後台</title>
+<style>
+:root{--gold:#f4c542;--bg:#0f0f0f;--panel:#151515;--panel2:#202020;--line:#333;--muted:#aaa;--green:#38d47a;--red:#ff6b6b}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,'Microsoft JhengHei',sans-serif;background:var(--bg);color:#fff}.app{display:grid;grid-template-columns:340px 1fr 360px;height:100vh}.side,.note{background:var(--panel);overflow:auto}.side{border-right:1px solid var(--line)}.note{border-left:1px solid var(--line);padding:14px}.top{padding:14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}.list .item{padding:12px;border-bottom:1px solid #282828;cursor:pointer}.item:hover,.item.active{background:#242424}.small{color:var(--muted);font-size:12px;line-height:1.45}.chat{display:flex;flex-direction:column;min-width:0}.msgs{flex:1;overflow:auto;padding:18px}.msg{max-width:75%;padding:10px 12px;border-radius:12px;margin:8px 0;line-height:1.45;white-space:pre-wrap}.visitor{background:#2b2b2b}.agent{background:var(--gold);color:#111;margin-left:auto}.send{display:flex;border-top:1px solid var(--line);gap:8px;padding:10px;background:#111}.send input{flex:1}button{border:0;background:var(--gold);color:#111;font-weight:bold;padding:10px 12px;cursor:pointer;border-radius:8px;white-space:nowrap}button.secondary{background:#2c2c2c;color:#fff;border:1px solid #444}button.danger{background:#5b2525;color:#fff}textarea,input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #333;background:var(--panel2);color:#fff;outline:none}label{display:block;font-size:13px;color:#ccc;margin-top:10px}.empty{color:#888;text-align:center;margin-top:40px}.pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;margin-right:4px}.online{background:#113d25;color:#7ff0a7}.offline{background:#432222;color:#ff9c9c}.status{background:#2a2a2a;color:#ddd}.section{margin-bottom:14px;padding:12px;border:1px solid #333;border-radius:12px;background:#111}.section h3,.section h4{margin:0 0 10px}.quick{display:flex;flex-wrap:wrap;gap:6px;max-height:104px;overflow:auto;padding:10px;border-top:1px solid var(--line);background:#101010}.quick button{font-size:12px;background:#2b2b2b;color:#fff;border:1px solid #444}.filters{padding:10px;border-bottom:1px solid var(--line);display:grid;gap:8px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mutedbox{background:#0b0b0b;border:1px solid #292929;border-radius:8px;padding:8px;overflow-wrap:anywhere}.unread{box-shadow:inset 4px 0 0 var(--gold)}@media(max-width:1000px){.app{grid-template-columns:1fr}.side,.note{height:38vh}.note{display:none}.quick{max-height:90px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="top"><b>對話列表</b><button onclick="logout()">登出</button></div>
+    <div class="filters">
+      <input id="search" placeholder="搜尋姓名 / 來源 / 活動 / 訊息" oninput="renderList()">
+      <div class="grid2"><select id="statusFilter" onchange="renderList()"><option value="">全部狀態</option><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select><select id="onlineFilter" onchange="renderList()"><option value="">全部在線</option><option value="online">在線</option><option value="offline">離線</option></select></div>
+    </div>
+    <div id="list" class="list"></div>
+  </aside>
+
+  <main class="chat">
+    <div class="top"><div><b id="title">請選擇對話</b><div class="small" id="sub"></div></div><button onclick="loadConversations()">刷新</button></div>
+    <div id="msgs" class="msgs"><div class="empty">左側選擇一個訪客開始回覆</div></div>
+    <div class="quick" id="quickReplyBar"></div>
+    <div class="send"><input id="text" placeholder="輸入回覆內容..."><button onclick="sendMsg()">送出</button></div>
+  </main>
+
+  <aside class="note">
+    <div class="section">
+      <h3>客服狀態 / 自動招呼語</h3>
+      <label>目前客服狀態</label>
+      <select id="support_status"><option value="online">在線</option><option value="offline">離線</option></select>
+      <label>聊天窗口標題</label><input id="widget_title" placeholder="Suporte Online">
+      <label>在線招呼語</label><textarea id="online_greeting" rows="3"></textarea>
+      <label>離線招呼語</label><textarea id="offline_greeting" rows="3"></textarea>
+      <label>SOP 快捷話術（一行一則）</label><textarea id="quick_replies" rows="7" placeholder="您好，請問您的會員帳號是多少？"></textarea>
+      <button onclick="saveSettings()">儲存客服設定</button>
+    </div>
+
+    <div class="section">
+      <h3>訪客 / 備註</h3>
+      <div id="source_info" class="small mutedbox">尚未選擇對話</div>
+      <label>訪客名稱</label><input id="visitor_name">
+      <label>聯絡方式</label><input id="visitor_contact">
+      <label>會員帳號 / ID</label><input id="visitor_account">
+      <label>狀態</label><select id="status"><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select>
+      <label>指派客服</label><input id="assigned_to" placeholder="例如 admin1 / bbs01">
+      <label>內部備註</label><textarea id="note" rows="8" placeholder="這裡的備註只給內部看"></textarea>
+      <button onclick="saveNote()">儲存備註</button>
+    </div>
+  </aside>
+</div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+let current='', conversations=[], currentMessages=[], settings={quick_replies:[]}; const socket=io();
+const statusMap={open:'待處理',pending:'等待客戶',closed:'已結束'};
 async function check(){ const r=await fetch('/api/me'); if(!r.ok) location.href='/admin/login.html'; } check();
-function fmt(s){return s?new Date(s).toLocaleString():''}
-async function loadConversations(){ const r=await fetch('/api/conversations'); conversations=await r.json(); list.innerHTML=conversations.map(c=>`<div class="item ${c.id===current?'active':''}" onclick="openConvo('${c.id}')"><b>${c.visitor_name||c.id.slice(0,8)}</b><div class="small">${c.status} ${c.assigned_to?'｜'+c.assigned_to:''}</div><div class="small">${(c.last_message||'').slice(0,48)}</div><div class="small">${fmt(c.updated_at)}</div></div>`).join(''); }
-async function openConvo(id){ current=id; socket.emit('join',id); const r=await fetch('/api/conversations/'+id); const data=await r.json(); const c=data.conversation; title.textContent=c.visitor_name||c.id; sub.textContent='ID: '+c.id+' ｜ '+fmt(c.created_at); visitor_name.value=c.visitor_name||''; visitor_contact.value=c.visitor_contact||''; status.value=c.status||'open'; assigned_to.value=c.assigned_to||''; note.value=c.note||''; renderMsgs(data.messages); loadConversations(); }
-function renderMsgs(ms){ msgs.innerHTML=ms.map(m=>`<div class="msg ${m.sender_type==='agent'?'agent':'visitor'}"><div>${escapeHtml(m.body)}</div><div class="small">${m.sender_name||m.sender_type} ｜ ${fmt(m.created_at)}</div></div>`).join(''); msgs.scrollTop=msgs.scrollHeight; }
-function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-async function sendMsg(){ if(!current||!text.value.trim())return; await fetch('/api/conversations/'+current+'/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({body:text.value.trim()})}); text.value=''; await openConvo(current); }
-async function saveNote(){ if(!current)return; await fetch('/api/conversations/'+current,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitor_name:visitor_name.value,visitor_contact:visitor_contact.value,status:status.value,assigned_to:assigned_to.value,note:note.value})}); await openConvo(current); }
+function fmt(s){return s?new Date(s).toLocaleString('zh-TW',{hour12:false}):''}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function onlineText(c){ return c.visitor_online ? '<span class="pill online">在線</span>' : '<span class="pill offline">離線</span>'; }
+function statusText(v){ return statusMap[v] || v || '待處理'; }
+async function loadSettings(){ const r=await fetch('/api/settings'); settings=await r.json(); support_status.value=settings.support_status||'online'; widget_title.value=settings.title||''; online_greeting.value=settings.online_greeting||''; offline_greeting.value=settings.offline_greeting||''; quick_replies.value=(settings.quick_replies||[]).join('\n'); renderQuickReplies(); }
+function renderQuickReplies(){ quickReplyBar.innerHTML=(settings.quick_replies||[]).map(q=>`<button type="button" onclick="useQuick('${encodeURIComponent(q)}')">${escapeHtml(q.slice(0,40))}</button>`).join('') || '<span class="small">尚未設定 SOP 快捷話術</span>'; }
+function useQuick(encoded){ text.value=decodeURIComponent(encoded); text.focus(); }
+async function saveSettings(){ const list=quick_replies.value.split('\n').map(x=>x.trim()).filter(Boolean); const r=await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({support_status:support_status.value,widget_title:widget_title.value,online_greeting:online_greeting.value,offline_greeting:offline_greeting.value,quick_replies:list})}); if(r.ok){ settings=(await r.json()).settings; renderQuickReplies(); alert('客服設定已儲存'); } }
+async function loadConversations(){ const r=await fetch('/api/conversations'); conversations=await r.json(); renderList(); }
+function renderList(){ const q=(search.value||'').toLowerCase(); const sf=statusFilter.value; const of=onlineFilter.value; const filtered=conversations.filter(c=>{ const blob=[c.visitor_name,c.visitor_contact,c.visitor_account,c.source_title,c.source_site,c.source_campaign,c.utm_campaign,c.last_message,c.last_agent,c.assigned_to].join(' ').toLowerCase(); if(q && !blob.includes(q)) return false; if(sf && c.status!==sf) return false; if(of==='online' && !c.visitor_online) return false; if(of==='offline' && c.visitor_online) return false; return true; }); list.innerHTML=filtered.map(c=>`<div class="item ${c.id===current?'active':''} ${c.last_sender_type==='visitor'?'unread':''}" onclick="openConvo('${c.id}')"><b>${escapeHtml(c.visitor_name||'未留姓名')}</b> ${onlineText(c)}<div class="small">來源：${escapeHtml(c.source_title||c.source_site||'未標記')}${c.source_campaign?' ｜ '+escapeHtml(c.source_campaign):''}</div><div class="small"><span class="pill status">${statusText(c.status)}</span>${c.assigned_to?' 指派：'+escapeHtml(c.assigned_to):''}${c.last_agent?' ｜ 最後回覆：'+escapeHtml(c.last_agent):''}</div><div class="small">${escapeHtml((c.last_message||'').slice(0,58))}</div><div class="small">${fmt(c.updated_at)}</div></div>`).join('') || '<div class="empty">沒有符合的對話</div>'; }
+async function openConvo(id){ current=id; socket.emit('join',id); const r=await fetch('/api/conversations/'+id); const data=await r.json(); const c=data.conversation; currentMessages=data.messages; title.innerHTML=`${escapeHtml(c.visitor_name||'未留姓名')} ${c.visitor_online?'<span class="pill online">在線</span>':'<span class="pill offline">離線</span>'}`; sub.textContent='ID: '+c.id+' ｜ 建立：'+fmt(c.created_at)+' ｜ 最後上線：'+fmt(c.visitor_last_seen); source_info.innerHTML = `<div><b>來源資訊</b></div><div>落地頁：${escapeHtml(c.source_title||'')}</div><div>代號：${escapeHtml(c.source_site||'')}</div><div>活動：${escapeHtml(c.source_campaign||c.utm_campaign||'')}</div><div>UTM：${escapeHtml([c.utm_source,c.utm_medium,c.utm_campaign].filter(Boolean).join(' / ')||'')}</div><div>網址：${escapeHtml(c.source_url||'')}</div><div>Referrer：${escapeHtml(c.source_referrer||'')}</div><div>最後回覆客服：${escapeHtml(c.last_agent||'尚未回覆')}</div>`; visitor_name.value=c.visitor_name||''; visitor_contact.value=c.visitor_contact||''; visitor_account.value=c.visitor_account||''; status.value=c.status||'open'; assigned_to.value=c.assigned_to||''; note.value=c.note||''; renderMsgs(data.messages); renderList(); }
+function renderMsgs(ms){ msgs.innerHTML=ms.map(m=>`<div class="msg ${m.sender_type==='agent'?'agent':'visitor'}"><div>${escapeHtml(m.body)}</div><div class="small">${m.sender_type==='agent'?'客服':'訪客'}：${escapeHtml(m.sender_name||'')} ｜ ${fmt(m.created_at)}</div></div>`).join('') || '<div class="empty">尚無訊息</div>'; msgs.scrollTop=msgs.scrollHeight; }
+async function sendMsg(){ if(!current||!text.value.trim())return; const body=text.value.trim(); text.value=''; await fetch('/api/conversations/'+current+'/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({body})}); await openConvo(current); await loadConversations(); }
+async function saveNote(){ if(!current)return; await fetch('/api/conversations/'+current,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitor_name:visitor_name.value,visitor_contact:visitor_contact.value,visitor_account:visitor_account.value,status:status.value,assigned_to:assigned_to.value,note:note.value})}); await openConvo(current); await loadConversations(); }
 async function logout(){ await fetch('/api/logout',{method:'POST'}); location.href='/admin/login.html'; }
 socket.on('message',m=>{ if(m.conversation_id===current) openConvo(current); loadConversations(); });
-socket.on('new_conversation',loadConversations); socket.on('conversation_updated',loadConversations);
-text.addEventListener('keydown',e=>{ if(e.key==='Enter') sendMsg(); }); loadConversations();
-</script></body></html>
+socket.on('new_conversation',loadConversations); socket.on('conversation_updated',c=>{ loadConversations(); if(c && c.id===current) openConvo(current); }); socket.on('settings_updated',s=>{ settings=s; renderQuickReplies(); });
+text.addEventListener('keydown',e=>{ if(e.key==='Enter') sendMsg(); }); loadSettings(); loadConversations();
+</script>
+</body>
+</html>
