@@ -138,7 +138,7 @@
     }
 
     .btn.sound-on {
-      background: #195f36;
+      background: #145c36;
       border-color: #2aa65a;
       color: #fff;
     }
@@ -420,6 +420,44 @@
       word-break: break-all;
     }
 
+    .toast {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 999999;
+      min-width: 220px;
+      max-width: 360px;
+      padding: 13px 16px;
+      border-radius: 12px;
+      background: #191919;
+      border: 1px solid #f4c542;
+      color: #fff;
+      box-shadow: 0 12px 36px rgba(0,0,0,.45);
+      font-size: 14px;
+      font-weight: 700;
+      opacity: 0;
+      transform: translateY(12px);
+      pointer-events: none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast.success {
+      border-color: #2aa65a;
+    }
+
+    .toast.warn {
+      border-color: #f4c542;
+    }
+
+    .toast.error {
+      border-color: #e83d3d;
+    }
+
     .hidden {
       display: none !important;
     }
@@ -452,7 +490,7 @@
     <div class="top">
       <h2>對話列表 <span id="totalUnread" class="unread hidden">0</span></h2>
       <div>
-        <button class="btn sound-off" id="soundBtn">提示音：關</button>
+        <button class="btn sound-on" id="soundBtn">提示音：開</button>
         <button class="btn primary" id="logoutBtn">登出</button>
       </div>
     </div>
@@ -535,9 +573,9 @@
 
     <div class="hint">
       例：<br>
-      admin=客服小雅<br>
-      admin1=F1專員<br>
-      bbs01=VIP專員
+      admin=小编小雅<br>
+      admin1=小编朵朵<br>
+      admin2=小编小葵
     </div>
 
     <button class="btn primary" id="saveSettings" style="margin-top:10px">儲存客服設定</button>
@@ -545,6 +583,8 @@
     <div id="convInfo" class="info">尚未選擇對話</div>
   </aside>
 </div>
+
+<div id="toast" class="toast">已儲存</div>
 
 <script src="/socket.io/socket.io.js"></script>
 
@@ -555,7 +595,12 @@ let conversations = [];
 let currentId = '';
 let currentBox = 'inbox';
 
-let soundEnabled = localStorage.getItem('ccs_admin_sound_enabled') === '1';
+/*
+  預設提示音：開
+  如果客服手動關閉，localStorage 會記住為 0。
+*/
+let soundEnabled = localStorage.getItem('ccs_admin_sound_enabled') !== '0';
+
 let audioCtx = null;
 let lastBeepAt = 0;
 
@@ -589,6 +634,21 @@ function networkLabel(c) {
 
 function regionLabel(c) {
   return [c.ip_country_zh, c.ip_region, c.ip_city].filter(Boolean).join(' / ') || '未知';
+}
+
+function showToast(message, type = 'success') {
+  const t = $('toast');
+
+  if (!t) return;
+
+  t.textContent = message;
+  t.className = 'toast show ' + type;
+
+  clearTimeout(showToast._timer);
+
+  showToast._timer = setTimeout(() => {
+    t.className = 'toast ' + type;
+  }, 1800);
 }
 
 function updateTitle() {
@@ -637,7 +697,7 @@ async function beep(force = false) {
 
   const now = Date.now();
 
-  if (!force && now - lastBeepAt < 700) {
+  if (!force && now - lastBeepAt < 650) {
     return;
   }
 
@@ -648,12 +708,11 @@ async function beep(force = false) {
     if (!ok) return;
 
     /*
-      較大聲的叮咚音：
-      使用兩段音 + 較高 gain。
-      如果覺得太大聲，可把 master.gain.value 由 0.55 改成 0.35。
+      大聲版叮咚音。
+      想再小聲一點，把 master.gain.value 從 0.7 改成 0.45。
     */
     const master = audioCtx.createGain();
-    master.gain.value = 0.55;
+    master.gain.value = 0.7;
     master.connect(audioCtx.destination);
 
     function tone(freq, start, duration, gainValue) {
@@ -671,11 +730,12 @@ async function beep(force = false) {
       gain.connect(master);
 
       osc.start(audioCtx.currentTime + start);
-      osc.stop(audioCtx.currentTime + start + duration + 0.03);
+      osc.stop(audioCtx.currentTime + start + duration + 0.04);
     }
 
-    tone(980, 0, 0.18, 0.9);
-    tone(1320, 0.16, 0.22, 0.85);
+    tone(920, 0, 0.20, 1.0);
+    tone(1320, 0.17, 0.24, 0.95);
+    tone(1040, 0.36, 0.18, 0.75);
   } catch (e) {}
 }
 
@@ -688,6 +748,9 @@ async function toggleSound() {
 
   if (soundEnabled) {
     await beep(true);
+    showToast('提示音已開啟', 'success');
+  } else {
+    showToast('提示音已關閉', 'warn');
   }
 }
 
@@ -716,6 +779,11 @@ async function init() {
   await loadConversations();
 
   bind();
+
+  /*
+    預設是開，但瀏覽器通常需要使用者互動後才允許播放。
+    所以這裡只設定 UI，不強制播放。
+  */
 }
 
 async function loadSettings() {
@@ -759,7 +827,7 @@ async function saveSettings() {
 
   renderQuick();
 
-  alert('已儲存');
+  showToast('客服設定已儲存', 'success');
 }
 
 async function loadConversations() {
@@ -1088,6 +1156,12 @@ function bind() {
   };
 
   $('soundBtn').onclick = toggleSound;
+
+  document.addEventListener('click', () => {
+    if (soundEnabled) {
+      ensureAudioContext();
+    }
+  }, { once: true });
 }
 
 socket.on('new_conversation', c => {
