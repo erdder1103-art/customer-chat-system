@@ -372,7 +372,21 @@ app.patch('/api/widget/conversations/:id/profile', (req,res)=> {
   res.json({ ok:true });
 });
 app.get('/api/widget/conversations/:id/messages', (req,res)=> {
-  const messages = db.prepare('SELECT sender_type, sender_name, sender_login, body, created_at FROM messages WHERE conversation_id=? ORDER BY id ASC').all(req.params.id);
+  const convo = convoById(req.params.id);
+
+  if (!convo) {
+    return res.status(404).json({
+      error: 'conversation not found'
+    });
+  }
+
+  const messages = db.prepare(`
+    SELECT sender_type, sender_name, body, created_at
+    FROM messages
+    WHERE conversation_id=?
+    ORDER BY id ASC
+  `).all(req.params.id);
+
   res.json(messages);
 });
 app.post('/api/widget/conversations/:id/messages', (req,res)=> {
