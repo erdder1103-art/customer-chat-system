@@ -1,100 +1,88 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>客服後台</title>
-<style>
-:root{--gold:#f4c542;--bg:#0f0f0f;--panel:#151515;--panel2:#202020;--line:#333;--muted:#aaa;--green:#38d47a;--red:#ff6b6b;--blue:#58a6ff}
-*{box-sizing:border-box}body{margin:0;font-family:Arial,'Microsoft JhengHei',sans-serif;background:var(--bg);color:#fff}.app{display:grid;grid-template-columns:360px 1fr 380px;height:100vh}.side,.note{background:var(--panel);overflow:auto}.side{border-right:1px solid var(--line)}.note{border-left:1px solid var(--line);padding:14px}.top{padding:14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;align-items:center}.list .item{padding:12px;border-bottom:1px solid #282828;cursor:pointer;position:relative}.item:hover,.item.active{background:#242424}.small{color:var(--muted);font-size:12px;line-height:1.45}.chat{display:flex;flex-direction:column;min-width:0}.msgs{flex:1;overflow:auto;padding:18px}.msg{max-width:75%;padding:10px 12px;border-radius:12px;margin:8px 0;line-height:1.45;white-space:pre-wrap}.visitor{background:#2b2b2b}.agent{background:var(--gold);color:#111;margin-left:auto}.send{display:flex;border-top:1px solid var(--line);gap:8px;padding:10px;background:#111}.send input{flex:1}button{border:0;background:var(--gold);color:#111;font-weight:bold;padding:10px 12px;cursor:pointer;border-radius:8px;white-space:nowrap}button.secondary{background:#2c2c2c;color:#fff;border:1px solid #444}button.danger{background:#6b2525;color:#fff}button.warn{background:#5a4614;color:#fff;border:1px solid #8b6c20}textarea,input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #333;background:var(--panel2);color:#fff;outline:none}label{display:block;font-size:13px;color:#ccc;margin-top:10px}.empty{color:#888;text-align:center;margin-top:40px}.pill{display:inline-block;border-radius:999px;padding:2px 8px;font-size:12px;margin-right:4px}.online{background:#113d25;color:#7ff0a7}.offline{background:#432222;color:#ff9c9c}.status{background:#2a2a2a;color:#ddd}.unreadBadge{display:inline-flex;min-width:22px;height:22px;align-items:center;justify-content:center;border-radius:999px;background:var(--gold);color:#111;font-weight:900;font-size:12px;margin-left:6px}.section{margin-bottom:14px;padding:12px;border:1px solid #333;border-radius:12px;background:#111}.section h3,.section h4{margin:0 0 10px}.quick{display:flex;flex-wrap:wrap;gap:6px;max-height:104px;overflow:auto;padding:10px;border-top:1px solid var(--line);background:#101010}.quick button{font-size:12px;background:#2b2b2b;color:#fff;border:1px solid #444}.filters{padding:10px;border-bottom:1px solid var(--line);display:grid;gap:8px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.mutedbox{background:#0b0b0b;border:1px solid #292929;border-radius:8px;padding:8px;overflow-wrap:anywhere}.unread{box-shadow:inset 4px 0 0 var(--gold)}.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:10px;border-bottom:1px solid var(--line)}.tabs button{background:#242424;color:#fff;border:1px solid #444}.tabs button.active{background:var(--gold);color:#111}.actions{display:flex;gap:8px;flex-wrap:wrap}.deviceLine{margin:4px 0}.linkish{color:var(--blue)}@media(max-width:1100px){.app{grid-template-columns:1fr}.side,.note{height:38vh}.note{display:none}.quick{max-height:90px}}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>客服後台</title>
+  <style>
+    *{box-sizing:border-box} body{margin:0;background:#0f0f0f;color:#fff;font-family:Arial,"Noto Sans TC",sans-serif} button,input,select,textarea{font:inherit}
+    .app{display:grid;grid-template-columns:360px 1fr 345px;height:100vh;overflow:hidden}.side{border-right:1px solid #333;background:#161616;display:flex;flex-direction:column}.main{display:flex;flex-direction:column;min-width:0}.settings{border-left:1px solid #333;background:#111;padding:12px;overflow:auto}
+    .top{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #333}.top h2{font-size:17px;margin:0}.btn{border:1px solid #444;background:#252525;color:#fff;border-radius:8px;padding:9px 12px;font-weight:700;cursor:pointer}.btn.primary{background:#f4c542;color:#111;border-color:#f4c542}.btn.danger{background:#702222}.btn.warn{background:#3a2f14}.btn.active{background:#f4c542;color:#111}.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:10px;border-bottom:1px solid #333}.filters{padding:10px;display:grid;gap:8px;border-bottom:1px solid #333}.filters input,.filters select,.settings input,.settings select,.settings textarea,.reply input{background:#222;color:#fff;border:1px solid #3a3a3a;border-radius:8px;padding:10px;width:100%}.filters-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .list{overflow:auto;flex:1}.item{padding:12px;border-bottom:1px solid #2f2f2f;cursor:pointer;background:#191919}.item:hover,.item.active{background:#262626}.item-title{font-weight:900;font-size:16px;display:flex;gap:8px;align-items:center}.pill{font-size:12px;border-radius:999px;padding:2px 7px;background:#145c36;color:#39ff88}.pill.off{background:#642323;color:#ffabab}.unread{background:#e83d3d;color:#fff;border-radius:999px;min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:12px}.meta{font-size:12px;color:#cfcfcf;margin-top:4px;line-height:1.45}.snippet{font-size:13px;color:#ddd;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .chat-head{padding:12px 14px;border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-title{font-size:18px;font-weight:900}.chat-sub{font-size:12px;color:#ccc;margin-top:3px}.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.msgs{flex:1;overflow:auto;padding:18px;background:#101010}.msg{max-width:70%;padding:10px 12px;border-radius:12px;margin-bottom:10px;white-space:pre-wrap;line-height:1.4}.msg.visitor{background:#2b2b2b;margin-right:auto}.msg.agent{background:#f4c542;color:#111;margin-left:auto}.msg-time{font-size:11px;opacity:.65;margin-top:4px}.quick{display:flex;gap:6px;padding:10px;border-top:1px solid #333;overflow-x:auto}.quick button{white-space:nowrap}.reply{display:flex;gap:8px;padding:10px;border-top:1px solid #333}.reply input{flex:1}.empty{display:flex;align-items:center;justify-content:center;color:#aaa;height:100%}
+    .settings h3{margin:8px 0 12px}.settings label{display:block;font-size:13px;color:#ddd;margin:12px 0 6px}.settings textarea{min-height:72px;resize:vertical}.settings .hint{font-size:12px;color:#f4c542;line-height:1.4}.info{font-size:12px;color:#ddd;line-height:1.55;background:#191919;border:1px solid #333;border-radius:10px;padding:10px;margin-top:10px;word-break:break-all}.hidden{display:none!important}
+    @media(max-width:1100px){.app{grid-template-columns:320px 1fr}.settings{display:none}.settings.show{display:block;position:fixed;right:0;top:0;bottom:0;width:345px;z-index:20}}
+  </style>
 </head>
 <body>
 <div class="app">
   <aside class="side">
-    <div class="top"><b>對話列表 <span id="totalUnread" class="unreadBadge" style="display:none">0</span></b><div class="actions"><button class="secondary" onclick="enableSound()">啟用提示音</button><button onclick="logout()">登出</button></div></div>
-    <div class="tabs"><button id="tab-active" class="active" onclick="setBucket('active')">進行中</button><button id="tab-archived" onclick="setBucket('archived')">封存</button><button id="tab-trash" onclick="setBucket('trash')">垃圾桶</button></div>
-    <div class="filters">
-      <input id="search" placeholder="搜尋姓名 / 來源 / 活動 / 訊息 / 地區" oninput="renderList()">
-      <div class="grid2"><select id="statusFilter" onchange="renderList()"><option value="">全部狀態</option><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select><select id="onlineFilter" onchange="renderList()"><option value="">全部在線</option><option value="online">在線</option><option value="offline">離線</option></select></div>
-    </div>
+    <div class="top"><h2>對話列表 <span id="totalUnread" class="unread hidden">0</span></h2><div><button class="btn" id="soundBtn">啟用提示音</button><button class="btn primary" id="logoutBtn">登出</button></div></div>
+    <div class="tabs"><button class="btn active" data-box="inbox">進行中</button><button class="btn" data-box="archive">封存</button><button class="btn" data-box="trash">垃圾桶</button></div>
+    <div class="filters"><input id="search" placeholder="搜尋姓名 / 來源 / 活動 / 訊息"><div class="filters-row"><select id="statusFilter"><option value="">全部狀態</option><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select><select id="onlineFilter"><option value="">全部在線</option><option value="1">在線</option><option value="0">離線</option></select></div></div>
     <div id="list" class="list"></div>
   </aside>
-
-  <main class="chat">
-    <div class="top"><div><b id="title">請選擇對話</b><div class="small" id="sub"></div></div><div class="actions" id="conversationActions"><button onclick="loadConversations()">刷新</button></div></div>
-    <div id="msgs" class="msgs"><div class="empty">左側選擇一個訪客開始回覆</div></div>
-    <div class="quick" id="quickReplyBar"></div>
-    <div class="send"><input id="text" placeholder="輸入回覆內容..."><button onclick="sendMsg()">送出</button></div>
+  <main class="main">
+    <div id="chatEmpty" class="empty">請選擇一個對話</div>
+    <div id="chatPanel" class="main hidden">
+      <div class="chat-head"><div><div class="chat-title" id="convTitle">-</div><div class="chat-sub" id="convSub">-</div></div><div class="actions" id="convActions"></div></div>
+      <div id="msgs" class="msgs"></div>
+      <div id="quick" class="quick"></div>
+      <div class="reply"><input id="replyInput" placeholder="輸入回覆內容..."><button class="btn primary" id="sendBtn">送出</button></div>
+    </div>
   </main>
-
-  <aside class="note">
-    <div class="section">
-      <h3>客服狀態 / 話術 / 顯示名稱</h3>
-      <label>目前客服狀態</label><select id="support_status"><option value="online">在線</option><option value="offline">離線</option></select>
-      <label>聊天窗口標題</label><input id="widget_title" placeholder="领取10USDT窗口">
-      <label>在線招呼語</label><textarea id="online_greeting" rows="3"></textarea>
-      <label>離線招呼語</label><textarea id="offline_greeting" rows="3"></textarea>
-      <label>SOP 快捷話術（一行一則）</label><textarea id="quick_replies" rows="6"></textarea>
-      <label>客服顯示名稱（一行一組：帳號=客戶看到的名稱）</label><textarea id="agent_display_names" rows="4" placeholder="admin=客服小雅"></textarea>
-      <button onclick="saveSettings()">儲存客服設定</button>
-    </div>
-
-    <div class="section">
-      <h3>訪客 / 來源 / 設備</h3>
-      <div id="source_info" class="small mutedbox">尚未選擇對話</div>
-      <label>訪客名稱</label><input id="visitor_name">
-      <label>聯絡方式</label><input id="visitor_contact">
-      <label>會員帳號 / ID</label><input id="visitor_account">
-      <label>狀態</label><select id="status"><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select>
-      <label>指派客服</label><input id="assigned_to" placeholder="例如 admin1 / bbs01">
-      <label>內部備註</label><textarea id="note" rows="7" placeholder="這裡的備註只給內部看"></textarea>
-      <button onclick="saveNote()">儲存備註</button>
-    </div>
+  <aside class="settings" id="settingsPanel">
+    <h3>客服狀態 / 話術 / 顯示名稱</h3>
+    <label>目前客服狀態</label><select id="supportStatus"><option value="online">在線</option><option value="offline">離線</option></select>
+    <label>聊天窗口標題</label><input id="widgetTitle">
+    <label>在線招呼語</label><textarea id="onlineGreeting"></textarea>
+    <label>離線招呼語</label><textarea id="offlineGreeting"></textarea>
+    <label>SOP 快捷話術（一行一則）</label><textarea id="quickReplies"></textarea>
+    <label>客服顯示名稱（一行一組：帳號=客戶看到的名稱）</label><textarea id="agentDisplayNames"></textarea>
+    <div class="hint">例：<br>admin=客服小雅<br>admin1=F1專員<br>bbs01=VIP專員</div>
+    <button class="btn primary" id="saveSettings" style="margin-top:10px">儲存客服設定</button>
+    <div id="convInfo" class="info">尚未選擇對話</div>
   </aside>
 </div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-let current='', conversations=[], currentMessages=[], settings={quick_replies:[],agent_display_names:{}}, bucket='active';
-let soundEnabled=false, audioCtx=null, unreadMap={};
+let me=null, settings=null, conversations=[], currentId='', currentBox='inbox', soundEnabled=false, audioCtx=null;
+const renderedIds=new Set();
+const $=id=>document.getElementById(id);
 const socket=io();
-const renderedMessageIds=new Set();
-const statusMap={open:'待處理',pending:'等待客戶',closed:'已結束'};
-async function check(){ const r=await fetch('/api/me'); if(!r.ok) location.href='/admin/login.html'; } check();
-function fmt(s){return s?new Date(s).toLocaleString('zh-TW',{hour12:false}):''}
-function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function onlineText(c){ return c.visitor_online ? '<span class="pill online">在線</span>' : '<span class="pill offline">離線</span>'; }
-function statusText(v){ return statusMap[v] || v || '待處理'; }
-function networkText(c){ return c.network_type ? c.network_type : '未知（瀏覽器未提供）'; }
-async function enableSound(){ try{ audioCtx = new (window.AudioContext||window.webkitAudioContext)(); await audioCtx.resume(); soundEnabled=true; playDing(); alert('提示音已啟用'); }catch(e){ alert('瀏覽器不允許播放提示音，請再點一次或檢查瀏覽器設定'); } }
-function playDing(){ if(!soundEnabled || !audioCtx) return; try{ const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.setValueAtTime(880,audioCtx.currentTime); o.frequency.setValueAtTime(660,audioCtx.currentTime+0.12); g.gain.setValueAtTime(0.001,audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.22,audioCtx.currentTime+0.02); g.gain.exponentialRampToValueAtTime(0.001,audioCtx.currentTime+0.38); o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime+0.4); }catch(e){} }
-function updateTitle(){ const total=Object.values(unreadMap).reduce((a,b)=>a+(Number(b)||0),0); totalUnread.style.display=total>0?'inline-flex':'none'; totalUnread.textContent=total; document.title=total>0?`(${total}) 客服後台`:'客服後台'; }
-async function loadSettings(){ const r=await fetch('/api/settings'); settings=await r.json(); support_status.value=settings.support_status||'online'; widget_title.value=settings.title||''; online_greeting.value=settings.online_greeting||''; offline_greeting.value=settings.offline_greeting||''; quick_replies.value=(settings.quick_replies||[]).join('\n'); const names=settings.agent_display_names||{}; agent_display_names.value=Object.keys(names).map(k=>`${k}=${names[k]}`).join('\n'); renderQuickReplies(); }
-function renderQuickReplies(){ quickReplyBar.innerHTML=(settings.quick_replies||[]).map(q=>`<button type="button" onclick="useQuick('${encodeURIComponent(q)}')">${escapeHtml(q.slice(0,46))}</button>`).join('') || '<span class="small">尚未設定 SOP 快捷話術</span>'; }
-function useQuick(encoded){ text.value=decodeURIComponent(encoded); text.focus(); }
-async function saveSettings(){ const list=quick_replies.value.split('\n').map(x=>x.trim()).filter(Boolean); const r=await fetch('/api/settings',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({support_status:support_status.value,widget_title:widget_title.value,online_greeting:online_greeting.value,offline_greeting:offline_greeting.value,quick_replies:list,agent_display_names:agent_display_names.value})}); if(r.ok){ settings=(await r.json()).settings; renderQuickReplies(); alert('客服設定已儲存'); } }
-function setBucket(b){ bucket=b; ['active','archived','trash'].forEach(x=>document.getElementById('tab-'+x).classList.toggle('active',x===b)); current=''; clearCurrent(); loadConversations(); }
-function clearCurrent(){ title.textContent='請選擇對話'; sub.textContent=''; msgs.innerHTML='<div class="empty">左側選擇一個訪客開始回覆</div>'; source_info.textContent='尚未選擇對話'; conversationActions.innerHTML='<button onclick="loadConversations()">刷新</button>'; }
-async function loadConversations(){ const r=await fetch('/api/conversations?state='+bucket); conversations=await r.json(); unreadMap={}; conversations.forEach(c=>{ if(c.unread_count>0) unreadMap[c.id]=c.unread_count; }); renderList(); updateTitle(); }
-function renderList(){ const q=(search.value||'').toLowerCase(); const sf=statusFilter.value; const of=onlineFilter.value; const filtered=conversations.filter(c=>{ const blob=[c.visitor_name,c.visitor_contact,c.visitor_account,c.source_title,c.source_site,c.source_campaign,c.utm_campaign,c.last_message,c.last_agent,c.assigned_to,c.ip_country_zh,c.ip_city,c.device_model,c.device_type,c.browser].join(' ').toLowerCase(); if(q && !blob.includes(q)) return false; if(sf && c.status!==sf) return false; if(of==='online' && !c.visitor_online) return false; if(of==='offline' && c.visitor_online) return false; return true; }); list.innerHTML=filtered.map(c=>`<div class="item ${c.id===current?'active':''} ${(c.unread_count||0)>0?'unread':''}" onclick="openConvo('${c.id}')"><b>${escapeHtml(c.visitor_name||'未留姓名')}</b> ${onlineText(c)} ${(c.unread_count||0)>0?`<span class="unreadBadge">${c.unread_count}</span>`:''}<div class="small">來源：${escapeHtml(c.source_title||c.source_site||'未標記')}${c.source_campaign?' ｜ '+escapeHtml(c.source_campaign):''}</div><div class="small">地區：${escapeHtml([c.ip_country_zh,c.ip_city].filter(Boolean).join(' / ')||'未知')} ｜ 裝置：${escapeHtml(c.device_model||c.device_type||'未知')}</div><div class="small"><span class="pill status">${statusText(c.status)}</span>${c.assigned_to?' 指派：'+escapeHtml(c.assigned_to):''}${c.last_agent?' ｜ 最後回覆：'+escapeHtml(c.last_agent):''}</div><div class="small">${escapeHtml((c.last_message||'').slice(0,70))}</div><div class="small">${fmt(c.updated_at)}</div></div>`).join('') || '<div class="empty">沒有符合的對話</div>'; }
-async function markRead(id){ await fetch('/api/conversations/'+id+'/read',{method:'PATCH'}); unreadMap[id]=0; updateTitle(); }
-async function openConvo(id){ current=id; socket.emit('join',id); await markRead(id); const r=await fetch('/api/conversations/'+id); const data=await r.json(); const c=data.conversation; currentMessages=data.messages; title.innerHTML=`${escapeHtml(c.visitor_name||'未留姓名')} ${onlineText(c)}`; sub.textContent='ID: '+c.id+' ｜ 建立：'+fmt(c.created_at)+' ｜ 最後上線：'+fmt(c.visitor_last_seen); renderActions(c); renderSourceInfo(c); visitor_name.value=c.visitor_name||''; visitor_contact.value=c.visitor_contact||''; visitor_account.value=c.visitor_account||''; status.value=c.status||'open'; assigned_to.value=c.assigned_to||''; note.value=c.note||''; renderMsgs(data.messages); await loadConversations(); }
-function renderActions(c){ let html='<button onclick="loadConversations()">刷新</button><button class="secondary" onclick="markRead(current)">標記已讀</button>'; if(bucket==='active') html+='<button class="warn" onclick="changeState(\'archived\')">封存</button><button class="danger" onclick="changeState(\'trash\')">刪除</button>'; if(bucket==='archived') html+='<button onclick="changeState(\'active\')">還原</button><button class="danger" onclick="changeState(\'trash\')">丟垃圾桶</button>'; if(bucket==='trash') html+='<button onclick="changeState(\'active\')">還原</button><button class="danger" onclick="deleteForever()">永久刪除</button>'; conversationActions.innerHTML=html; }
-function renderSourceInfo(c){ source_info.innerHTML = `<div><b>來源資訊</b></div><div>落地頁：${escapeHtml(c.source_title||'')}</div><div>代號：${escapeHtml(c.source_site||'')}</div><div>活動：${escapeHtml(c.source_campaign||c.utm_campaign||'')}</div><div>UTM：${escapeHtml([c.utm_source,c.utm_medium,c.utm_campaign].filter(Boolean).join(' / ')||'')}</div><div>網址：${escapeHtml(c.source_url||'')}</div><div>Referrer：${escapeHtml(c.source_referrer||'')}</div><hr style="border-color:#333"><div><b>IP / 地區</b></div><div>IP：${escapeHtml(c.ip_address||'未提供')}</div><div>地區：${escapeHtml([c.ip_country_zh,c.ip_region,c.ip_city].filter(Boolean).join(' / ')||'未知')}</div><div>ISP：${escapeHtml(c.ip_isp||'未知')}</div><hr style="border-color:#333"><div><b>設備資訊</b></div><div class="deviceLine">裝置：${escapeHtml(c.device_model||'未知')} ｜ ${escapeHtml(c.device_type||'未知')}</div><div class="deviceLine">系統：${escapeHtml(c.os||'未知')} ｜ 瀏覽器：${escapeHtml(c.browser||'未知')}</div><div class="deviceLine">螢幕：${escapeHtml(c.screen_size||'未知')} ｜ 語言：${escapeHtml(c.language||'未知')}</div><div class="deviceLine">時區：${escapeHtml(c.timezone||'未知')}</div><div class="deviceLine">網路：${escapeHtml(networkText(c))}${c.network_downlink?' ｜ '+escapeHtml(c.network_downlink)+' Mbps':''}${c.network_rtt?' ｜ '+escapeHtml(c.network_rtt)+'ms':''}</div><details><summary class="linkish">User-Agent</summary><div>${escapeHtml(c.user_agent||'')}</div></details><hr style="border-color:#333"><div>最後回覆客服：${escapeHtml(c.last_agent||'尚未回覆')}</div>`; }
-function renderMsgs(ms){ renderedMessageIds.clear(); msgs.innerHTML=''; if(!ms.length){ msgs.innerHTML='<div class="empty">尚無訊息</div>'; return; } ms.forEach(renderMsg); msgs.scrollTop=msgs.scrollHeight; }
-function renderMsg(m){ if(m.id && renderedMessageIds.has(m.id)) return; if(m.id) renderedMessageIds.add(m.id); const div=document.createElement('div'); div.className='msg '+(m.sender_type==='agent'?'agent':'visitor'); div.innerHTML=`<div>${escapeHtml(m.body)}</div><div class="small">${m.sender_type==='agent'?'客服':'訪客'}：${escapeHtml(m.sender_name||'')} ${m.sender_login?`｜ 帳號：${escapeHtml(m.sender_login)}`:''} ｜ ${fmt(m.created_at)}</div>`; msgs.appendChild(div); msgs.scrollTop=msgs.scrollHeight; }
-async function sendMsg(){ if(!current||!text.value.trim())return; const body=text.value.trim(); text.value=''; const r=await fetch('/api/conversations/'+current+'/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({body})}); const msg=await r.json(); renderMsg(msg); await loadConversations(); }
-async function saveNote(){ if(!current)return; await fetch('/api/conversations/'+current,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({visitor_name:visitor_name.value,visitor_contact:visitor_contact.value,visitor_account:visitor_account.value,status:status.value,assigned_to:assigned_to.value,note:note.value})}); await openConvo(current); }
-async function changeState(state){ if(!current)return; await fetch('/api/conversations/'+current+'/state',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({state})}); current=''; clearCurrent(); await loadConversations(); }
-async function deleteForever(){ if(!current)return; if(!confirm('確定永久刪除此對話？此動作無法復原。'))return; await fetch('/api/conversations/'+current,{method:'DELETE'}); current=''; clearCurrent(); await loadConversations(); }
-async function logout(){ await fetch('/api/logout',{method:'POST'}); location.href='/admin/login.html'; }
-socket.on('message',m=>{ if(m.sender_type==='visitor'){ if(m.conversation_id!==current){ unreadMap[m.conversation_id]=(unreadMap[m.conversation_id]||0)+1; playDing(); } else { markRead(current); } updateTitle(); } if(m.conversation_id===current) renderMsg(m); loadConversations(); });
-socket.on('new_conversation',c=>{ playDing(); loadConversations(); });
-socket.on('conversation_updated',c=>{ loadConversations(); if(c && c.id===current){ /* keep current UI stable; manual refresh/open handles full reload */ } });
-socket.on('conversation_deleted',d=>{ if(d && d.id===current){ current=''; clearCurrent(); } loadConversations(); });
-socket.on('settings_updated',s=>{ settings=s; renderQuickReplies(); });
-text.addEventListener('keydown',e=>{ if(e.key==='Enter') sendMsg(); });
-loadSettings(); loadConversations();
+
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function fmt(t){ if(!t) return ''; const d=new Date(t); return isNaN(d)?t:d.toLocaleString('zh-TW',{hour12:false}); }
+function networkLabel(c){ return c.network_effective_type || c.network_type || '未知（瀏覽器未提供）'; }
+function regionLabel(c){ return [c.ip_country_zh,c.ip_region,c.ip_city].filter(Boolean).join(' / ') || '未知'; }
+function updateTitle(){ const n=conversations.reduce((a,c)=>a+Number(c.unread_count||0),0); document.title=n?`(${n}) 客服後台`:'客服後台'; $('totalUnread').textContent=n; $('totalUnread').classList.toggle('hidden',!n); }
+function beep(){ if(!soundEnabled) return; try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.value=880; g.gain.value=.18; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{o.frequency.value=660},120); setTimeout(()=>{o.stop()},240); }catch(e){} }
+async function api(url,opt={}){ const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opt}); if(r.status===401) location.href='/admin/login.html'; return r; }
+async function init(){ const meRes=await api('/api/me'); const mj=await meRes.json(); me=mj.user; await loadSettings(); await loadConversations(); bind(); }
+async function loadSettings(){ const r=await api('/api/settings'); settings=await r.json(); $('supportStatus').value=settings.support_status||'online'; $('widgetTitle').value=settings.title||''; $('onlineGreeting').value=settings.online_greeting||''; $('offlineGreeting').value=settings.offline_greeting||''; $('quickReplies').value=(settings.quick_replies||[]).join('\n'); $('agentDisplayNames').value=settings.agent_display_names_text || settings.agent_display_names || ''; renderQuick(); }
+async function saveSettings(){ const payload={support_status:$('supportStatus').value, widget_title:$('widgetTitle').value, online_greeting:$('onlineGreeting').value, offline_greeting:$('offlineGreeting').value, quick_replies:$('quickReplies').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean), agent_display_names:$('agentDisplayNames').value}; const r=await api('/api/settings',{method:'PATCH',body:JSON.stringify(payload)}); const j=await r.json(); settings=j.settings; $('agentDisplayNames').value=settings.agent_display_names_text || settings.agent_display_names || ''; renderQuick(); alert('已儲存'); }
+async function loadConversations(){ const r=await api('/api/conversations?box='+currentBox); conversations=await r.json(); renderList(); updateTitle(); }
+function renderList(){ const q=$('search').value.toLowerCase(); const st=$('statusFilter').value; const on=$('onlineFilter').value; const list=$('list'); list.innerHTML=''; conversations.filter(c=>{ const hay=[c.visitor_name,c.source_title,c.source_campaign,c.last_message,c.ip_country_zh,c.ip_city,c.device_model].join(' ').toLowerCase(); if(q && !hay.includes(q)) return false; if(st && c.status!==st) return false; if(on!=='' && String(c.visitor_online)!==on) return false; return true; }).forEach(c=>{ const div=document.createElement('div'); div.className='item '+(c.id===currentId?'active':''); div.onclick=()=>openConversation(c.id); div.innerHTML=`<div class="item-title">${esc(c.visitor_name||'訪客')} <span class="pill ${c.visitor_online?'':'off'}">${c.visitor_online?'在線':'離線'}</span>${c.unread_count?`<span class="unread">${c.unread_count}</span>`:''}</div><div class="meta">來源：${esc(c.source_title||c.source_site||'-')} ｜ ${esc(c.source_campaign||'-')}</div><div class="meta">地區：${esc(regionLabel(c))} ｜ 裝置：${esc(c.device_model||c.device_type||'-')}</div><div class="snippet">${esc(c.last_message||'')}</div><div class="meta">${fmt(c.updated_at)}</div>`; list.appendChild(div); }); }
+async function openConversation(id){ currentId=id; renderedIds.clear(); socket.emit('join',id); await api('/api/conversations/'+id+'/read',{method:'POST'}); const r=await api('/api/conversations/'+id); const j=await r.json(); $('chatEmpty').classList.add('hidden'); $('chatPanel').classList.remove('hidden'); renderConversation(j.conversation,j.messages); await loadConversations(); }
+function renderConversation(c,msgs){ $('convTitle').textContent=c.visitor_name||'訪客'; $('convSub').textContent=`ID: ${c.id} ｜ 建立：${fmt(c.created_at)} ｜ 最後上線：${fmt(c.visitor_last_seen)}`; $('convActions').innerHTML=actionsHtml(c); $('convInfo').innerHTML=infoHtml(c); const box=$('msgs'); box.innerHTML=''; msgs.forEach(renderMessage); box.scrollTop=box.scrollHeight; }
+function actionsHtml(c){ if(c.folder==='trash') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="deleteConv()">永久刪除</button>`; if(c.folder==='archive') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="trashConv()">刪除</button>`; return `<button class="btn" onclick="markRead()">標記已讀</button><button class="btn warn" onclick="archiveConv()">封存</button><button class="btn danger" onclick="trashConv()">刪除</button><button class="btn primary" onclick="refreshAll()">刷新</button>`; }
+function infoHtml(c){ return `<b>來源資訊</b><br>落地頁：${esc(c.source_title||'-')}<br>活動：${esc(c.source_campaign||'-')}<br>網址：${esc(c.source_url||'-')}<hr><b>IP / 地區</b><br>IP：${esc(c.ip_address||'-')}<br>地區：${esc(regionLabel(c))}<br>ISP：${esc(c.ip_isp||'-')}<hr><b>設備資訊</b><br>裝置：${esc(c.device_model||'-')}<br>類型：${esc(c.device_type||'-')}<br>系統：${esc(c.device_os||'-')}<br>瀏覽器：${esc(c.browser||'-')}<br>螢幕：${esc(c.screen_size||'-')}<br>語言：${esc(c.language||'-')}<br>時區：${esc(c.timezone||'-')}<br>網路：${esc(networkLabel(c))}<br><br><b>User-Agent</b><br>${esc(c.user_agent||'-')}`; }
+function renderMessage(m){ const key=m.id?`id:${m.id}`:`${m.sender_type}|${m.sender_name}|${m.body}|${m.created_at}`; if(renderedIds.has(key)) return; renderedIds.add(key); const d=document.createElement('div'); d.className='msg '+(m.sender_type==='visitor'?'visitor':'agent'); d.innerHTML=`${m.sender_type==='agent'&&m.sender_name?esc(m.sender_name)+': ':''}${esc(m.body)}<div class="msg-time">${fmt(m.created_at)}${m.sender_login?' ｜ 帳號：'+esc(m.sender_login):''}</div>`; $('msgs').appendChild(d); $('msgs').scrollTop=$('msgs').scrollHeight; }
+function renderQuick(){ const quicks=($('quickReplies').value||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean); $('quick').innerHTML=''; quicks.forEach(q=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=q; b.onclick=()=>{$('replyInput').value=q;$('replyInput').focus();}; $('quick').appendChild(b); }); }
+async function sendReply(){ const body=$('replyInput').value.trim(); if(!body||!currentId)return; $('replyInput').value=''; const r=await api('/api/conversations/'+currentId+'/messages',{method:'POST',body:JSON.stringify({body})}); const m=await r.json(); renderMessage(m); await loadConversations(); }
+async function markRead(){ if(currentId){await api('/api/conversations/'+currentId+'/read',{method:'POST'}); await loadConversations();} }
+async function archiveConv(){ if(currentId&&confirm('確定封存？')){await api('/api/conversations/'+currentId+'/archive',{method:'POST'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
+async function trashConv(){ if(currentId&&confirm('確定移到垃圾桶？')){await api('/api/conversations/'+currentId+'/trash',{method:'POST'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
+async function restoreConv(){ if(currentId){await api('/api/conversations/'+currentId+'/restore',{method:'POST'}); await loadConversations(); openConversation(currentId);} }
+async function deleteConv(){ if(currentId&&confirm('永久刪除後無法恢復，確定？')){await api('/api/conversations/'+currentId,{method:'DELETE'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
+async function refreshAll(){ await loadConversations(); if(currentId) await openConversation(currentId); }
+function bind(){ document.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-box]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentBox=b.dataset.box; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); ['search','statusFilter','onlineFilter'].forEach(id=>$(id).addEventListener('input',renderList)); $('saveSettings').onclick=saveSettings; $('sendBtn').onclick=sendReply; $('replyInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendReply();}); $('logoutBtn').onclick=async()=>{await api('/api/logout',{method:'POST'});location.href='/admin/login.html';}; $('soundBtn').onclick=()=>{soundEnabled=true; beep(); $('soundBtn').textContent='提示音已啟用';}; }
+socket.on('new_conversation', c=>{ conversations.unshift(c); renderList(); updateTitle(); beep(); });
+socket.on('conversation_updated', c=>{ const idx=conversations.findIndex(x=>x.id===c.id); const old=idx>=0?conversations[idx]:null; if(c.folder===currentBox || currentBox==='all'){ if(idx>=0) conversations[idx]=c; else conversations.unshift(c); } else if(idx>=0) conversations.splice(idx,1); renderList(); updateTitle(); if(old && Number(c.unread_count||0)>Number(old.unread_count||0) && c.last_sender_type==='visitor') beep(); if(currentId===c.id){ $('convSub').textContent=`ID: ${c.id} ｜ 建立：${fmt(c.created_at)} ｜ 最後上線：${fmt(c.visitor_last_seen)}`; $('convInfo').innerHTML=infoHtml(c); } });
+socket.on('conversation_deleted', ({id})=>{ conversations=conversations.filter(c=>c.id!==id); if(currentId===id){currentId='';$('chatPanel').classList.add('hidden');$('chatEmpty').classList.remove('hidden');} renderList(); updateTitle(); });
+socket.on('message', m=>{ if(currentId===m.conversation_id){ renderMessage(m); if(m.sender_type==='visitor') api('/api/conversations/'+currentId+'/read',{method:'POST'}); } else if(m.sender_type==='visitor') beep(); });
+window.archiveConv=archiveConv; window.trashConv=trashConv; window.restoreConv=restoreConv; window.deleteConv=deleteConv; window.markRead=markRead; window.refreshAll=refreshAll;
+init();
 </script>
 </body>
 </html>
