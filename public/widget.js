@@ -110,13 +110,6 @@
       navigator.webkitConnection ||
       {};
 
-    const network = {
-      effectiveType: connection.effectiveType || '',
-      downlink: connection.downlink || '',
-      rtt: connection.rtt || '',
-      saveData: connection.saveData || false
-    };
-
     return {
       device_type: deviceType,
       device_model: deviceModel,
@@ -127,10 +120,10 @@
       timezone,
       screen_size: screenSize,
       user_agent: ua,
-      network_type: network.effectiveType || '',
-      network_downlink: String(network.downlink || ''),
-      network_rtt: String(network.rtt || ''),
-      network_save_data: network.saveData ? '1' : '0'
+      network_type: connection.effectiveType || '',
+      network_downlink: String(connection.downlink || ''),
+      network_rtt: String(connection.rtt || ''),
+      network_save_data: connection.saveData ? '1' : '0'
     };
   }
 
@@ -140,7 +133,6 @@
 
   const storageKey = 'ccs_conversation_id_' + (pageMeta.source_site || location.pathname || 'default');
   const visitorNameKey = storageKey + '_visitor_name';
-  const greetedKey = storageKey + '_greeted';
 
   let conversationId = localStorage.getItem(storageKey) || '';
   let visitorName = localStorage.getItem(visitorNameKey) || autoVisitorName;
@@ -148,7 +140,8 @@
   let socket = null;
   let config = null;
   let isOpen = false;
-  let greetingRendered = false;
+  let openInProgress = false;
+  let messagesLoaded = false;
 
   localStorage.setItem(visitorNameKey, visitorName);
 
@@ -309,13 +302,6 @@
     background:#2b2b2b;
     color:#fff;
     margin-right:42px;
-  }
-
-  .ccs-meta{
-    display:block;
-    font-size:11px;
-    opacity:.65;
-    margin-top:4px;
   }
 
   #ccs-input{
@@ -491,9 +477,22 @@
     return config;
   }
 
-  async function ensureConversation() {
-    if (conversationId) return conversationId;
+  async function checkConversationExists(id) {
+    if (!id) return false;
 
+    try {
+      const res = await fetch(
+        baseUrl + '/api/widget/conversations/' + encodeURIComponent(id) + '/messages?v=' + Date.now(),
+        { cache: 'no-store' }
+      );
+
+      return res.ok;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  async function createConversation() {
     const payload = Object.assign({}, pageMeta, deviceInfo, {
       visitor_name: visitorName,
       visitor_contact: '',
@@ -507,10 +506,33 @@
     });
 
     const j = await r.json();
+
+    if (!j || !j.id) {
+      throw new Error('create conversation failed');
+    }
+
     conversationId = j.id;
     localStorage.setItem(storageKey, conversationId);
 
     return conversationId;
+  }
+
+  async function ensureConversation() {
+    if (conversationId) {
+      const exists = await checkConversationExists(conversationId);
+
+      if (exists) {
+        return conversationId;
+      }
+
+      localStorage.removeItem(storageKey);
+      conversationId = '';
+      socketLoaded = false;
+      socket = null;
+      messagesLoaded = false;
+    }
+
+    return await createConversation();
   }
 
   async function loadMessages() {
@@ -525,24 +547,19 @@
         : config.online_greeting;
 
     const list = await fetch(
-      baseUrl + '/api/widget/conversations/' + conversationId + '/messages?v=' + Date.now(),
+      baseUrl + '/api/widget/conversations/' + encodeURIComponent(conversationId) + '/messages?v=' + Date.now(),
       { cache: 'no-store' }
     )
       .then((r) => r.json())
       .catch(() => []);
 
     if (!list.length) {
-      if (!localStorage.getItem(greetedKey)) {
-        add(greeting, 'agent', '');
-        localStorage.setItem(greetedKey, '1');
-      } else {
-        add(greeting, 'agent', '');
-      }
+      add(greeting, 'agent', '');
     } else {
       list.forEach((m) => add(m.body, m.sender_type, m.sender_name));
     }
 
-    greetingRendered = true;
+    messagesLoaded = true;
   }
 
   function loadSocket() {
@@ -570,20 +587,26 @@
   }
 
   async function openChat() {
-    if (isOpen) return;
+    if (openInProgress) return;
+
+    openInProgress = true;
 
     isOpen = true;
     box.classList.add('show');
     overlay.classList.add('show');
     btn.classList.add('hide');
 
-    await loadMessages();
-    loadSocket();
+    try {
+      await loadMessages();
+      loadSocket();
 
-    setTimeout(() => {
-      updateViewportHeight();
-      scrollMsgsToBottom();
-    }, 50);
+      setTimeout(() => {
+        updateViewportHeight();
+        scrollMsgsToBottom();
+      }, 50);
+    } finally {
+      openInProgress = false;
+    }
   }
 
   function closeChat() {
@@ -618,7 +641,7 @@
 
     add(body, 'visitor', '');
 
-    await fetch(baseUrl + '/api/widget/conversations/' + conversationId + '/messages', {
+    await fetch(baseUrl + '/api/widget/conversations/' + encodeURIComponent(conversationId) + '/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ body })
