@@ -435,6 +435,17 @@
     msgs.scrollTop = msgs.scrollHeight;
   }
 
+  function linkifyEscapedText(text) {
+    const escaped = escapeHtml(text);
+    return escaped.replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi, function(url) {
+      const cleanUrl = url.replace(/[),.;!?]+$/g, '');
+      const tail = url.slice(cleanUrl.length);
+      const href = cleanUrl.startsWith('www.') ? 'https://' + cleanUrl : cleanUrl;
+      return '<a href="' + href + '" target="_blank" rel="noopener noreferrer" style="color:#4da3ff;text-decoration:underline;word-break:break-all;">' + cleanUrl + '</a>' + tail;
+    });
+  }
+
+
   function add(text, type, name) {
     const d = document.createElement('div');
     d.className = 'ccs-msg ' + (type === 'visitor' ? 'ccs-v' : 'ccs-a');
@@ -444,7 +455,7 @@
       prefix = name + ': ';
     }
 
-    d.innerHTML = escapeHtml(prefix + text);
+    d.innerHTML = linkifyEscapedText(prefix + text);
     msgs.appendChild(d);
     scrollMsgsToBottom();
   }

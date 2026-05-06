@@ -7,6 +7,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const Database = require('better-sqlite3');
 const { Server } = require('socket.io');
+const crypto = require('crypto');
 
 const app = express();
 const server = http.createServer(app);
@@ -109,7 +110,8 @@ function ensureColumn(table, column, definition) {
   ['network_downlink', "TEXT DEFAULT ''"],
   ['network_rtt', "TEXT DEFAULT ''"],
   ['platform', "TEXT DEFAULT ''"],
-  ['user_agent', "TEXT DEFAULT ''"]
+  ['user_agent', "TEXT DEFAULT ''"],
+  ['offline_auto_reply_key', "TEXT DEFAULT ''"]
 ].forEach(([col, def]) => ensureColumn('conversations', col, def));
 ensureColumn('messages', 'sender_login', "TEXT DEFAULT ''");
 
@@ -130,14 +132,15 @@ setDefault('quick_replies', JSON.stringify([
   '请稍等，我帮您查询一下。',
   '目前活动优惠已收到，我帮您确认适合的方案。'
 ]));
-setDefault('agent_display_names', 'admin=客服小雅\nadmin1=F1專員\nbbs01=VIP專員');
+setDefault('agent_display_names', 'admin=小编小雅\nadmin1=小编朵朵\nadmin2=小编小葵');
 
-const COPY_VERSION = 'f1top-10usdt-copy-v6-admin-trash-unread-zoom-greeting-once';
+const COPY_VERSION = 'f1top-v9-sop-links-greetings-visible';
 const currentCopyVersion = db.prepare('SELECT value FROM settings WHERE key=?').get('copy_version');
 if (!currentCopyVersion || currentCopyVersion.value !== COPY_VERSION) {
   forceSetting('widget_title', process.env.WIDGET_TITLE || '领取10USDT窗口');
   forceSetting('online_greeting', process.env.WIDGET_GREETING || '你好,领取10U体验金吗？');
-  forceSetting('offline_greeting', process.env.OFFLINE_GREETING || '目前非工作时间,请留下联系方式我们会与你联系协助你领取体验金。');
+  forceSetting('offline_greeting', process.env.OFFLINE_GREETING || '小编在线时间10-22点，目前非工作时间,请留下TG联系方式我们会与你联系协助你领取体验金。如没TG请留下你的通讯方式。');
+  forceSetting('agent_display_names', process.env.AGENT_DISPLAY_NAMES || 'admin=小编小雅\nadmin1=小编朵朵\nadmin2=小编小葵');
   forceSetting('copy_version', COPY_VERSION);
 }
 
@@ -163,6 +166,42 @@ function nowIso(){ return new Date().toISOString(); }
 function clean(v, n=500){ return String(v || '').slice(0, n); }
 function setting(key){ const row = db.prepare('SELECT value FROM settings WHERE key=?').get(key); return row ? row.value : ''; }
 function setSetting(key, value){ db.prepare('INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value').run(key, String(value || '')); }
+function normalizeAgentDisplayNames(value) {
+  if (Array.isArray(value)) return value.map(x => String(x || '').trim()).filter(Boolean).join('\n');
+  if (value && typeof value === 'object') {
+    return Object.entries(value).map(([k, v]) => `${String(k).trim()}=${String(v || '').trim()}`).filter(line => line.includes('=')).join('\n');
+  }
+  return String(value || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+}
+function offlineReplyKey() {
+  return crypto.createHash('sha1').update(`${setting('support_status')}|${setting('offline_greeting')}`).digest('hex');
+}
+function insertSystemMessage(conversationId, body) {
+  const text = String(body || '').trim();
+  if (!text) return null;
+  const info = db.prepare('INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, created_at) VALUES (?,?,?,?,?,?)').run(conversationId, 'agent', '', 'system', text, nowIso());
+  return db.prepare('SELECT * FROM messages WHERE id=?').get(info.lastInsertRowid);
+}
+function insertInitialGreeting(conversationId) {
+  const status = setting('support_status') || 'online';
+  const body = status === 'offline' ? setting('offline_greeting') : setting('online_greeting');
+  const msg = insertSystemMessage(conversationId, body);
+  if (status === 'offline') {
+    db.prepare('UPDATE conversations SET offline_auto_reply_key=? WHERE id=?').run(offlineReplyKey(), conversationId);
+  }
+  return msg;
+}
+function maybeInsertOfflineAutoReply(conversationId) {
+  if ((setting('support_status') || 'online') !== 'offline') return null;
+  const convo = convoById(conversationId);
+  if (!convo) return null;
+  const key = offlineReplyKey();
+  if (convo.offline_auto_reply_key === key) return null;
+  const msg = insertSystemMessage(conversationId, setting('offline_greeting'));
+  db.prepare('UPDATE conversations SET offline_auto_reply_key=?, updated_at=? WHERE id=?').run(key, nowIso(), conversationId);
+  return msg;
+}
+
 function parseAgentDisplayNames(){
   const raw = setting('agent_display_names') || '';
   const map = {};
@@ -189,7 +228,8 @@ function publicConfig(){
     online_greeting: setting('online_greeting') || '你好,领取10U体验金吗？',
     offline_greeting: setting('offline_greeting') || '目前非工作时间,请留下联系方式我们会与你联系协助你领取体验金。',
     quick_replies: quickReplies,
-    agent_display_names: setting('agent_display_names') || ''
+    agent_display_names: setting('agent_display_names') || '',
+    agent_display_names_text: setting('agent_display_names') || ''
   };
 }
 function convoById(id){ return db.prepare('SELECT * FROM conversations WHERE id=?').get(id); }
@@ -233,10 +273,20 @@ app.patch('/api/settings', requireLogin, (req,res)=> {
   const allowed = ['support_status','widget_title','online_greeting','offline_greeting','quick_replies','agent_display_names'];
   allowed.forEach(k => {
     if (Object.prototype.hasOwnProperty.call(req.body, k)) {
-      if (k === 'support_status') setSetting(k, req.body[k] === 'offline' ? 'offline' : 'online');
-      else if (k === 'quick_replies') {
+      if (k === 'support_status') {
+        const oldStatus = setting('support_status') || 'online';
+        const nextStatus = req.body[k] === 'offline' ? 'offline' : 'online';
+        setSetting(k, nextStatus);
+        if (oldStatus !== nextStatus) db.prepare("UPDATE conversations SET offline_auto_reply_key='' WHERE folder!='trash'").run();
+      } else if (k === 'quick_replies') {
         const list = Array.isArray(req.body[k]) ? req.body[k].map(x => clean(x, 300)).filter(Boolean) : [];
         setSetting(k, JSON.stringify(list));
+      } else if (k === 'agent_display_names') {
+        setSetting(k, clean(normalizeAgentDisplayNames(req.body[k]), 5000));
+      } else if (k === 'offline_greeting') {
+        const oldVal = setting('offline_greeting') || '';
+        setSetting(k, clean(req.body[k], 2000));
+        if (oldVal !== String(req.body[k] || '')) db.prepare("UPDATE conversations SET offline_auto_reply_key='' WHERE folder!='trash'").run();
       } else setSetting(k, clean(req.body[k], 2000));
     }
   });
@@ -354,7 +404,9 @@ app.post('/api/widget/conversations', (req,res)=> {
     nowIso(),
     nowIso()
   );
+  const greetingMsg = insertInitialGreeting(id);
   io.emit('new_conversation', convoListRow(id));
+  if (greetingMsg) io.to(id).emit('message', greetingMsg);
   res.json({ id });
 });
 app.patch('/api/widget/conversations/:id/profile', (req,res)=> {
@@ -381,7 +433,7 @@ app.get('/api/widget/conversations/:id/messages', (req,res)=> {
   }
 
   const messages = db.prepare(`
-    SELECT sender_type, sender_name, body, created_at
+    SELECT id, sender_type, sender_name, sender_login, body, created_at
     FROM messages
     WHERE conversation_id=?
     ORDER BY id ASC
@@ -398,6 +450,8 @@ app.post('/api/widget/conversations/:id/messages', (req,res)=> {
   db.prepare("UPDATE conversations SET visitor_online=1, visitor_last_seen=?, unread_count=unread_count+1, folder=CASE WHEN folder='trash' THEN 'trash' ELSE 'inbox' END, updated_at=? WHERE id=?").run(nowIso(), nowIso(), req.params.id);
   const msg = db.prepare('SELECT * FROM messages WHERE id=?').get(info.lastInsertRowid);
   io.to(req.params.id).emit('message', msg);
+  const autoReply = maybeInsertOfflineAutoReply(req.params.id);
+  if (autoReply) io.to(req.params.id).emit('message', autoReply);
   emitConversation(req.params.id);
   res.json(msg);
 });
