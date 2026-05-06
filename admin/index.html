@@ -4,84 +4,1166 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>客服後台</title>
+
   <style>
-    *{box-sizing:border-box} body{margin:0;background:#0f0f0f;color:#fff;font-family:Arial,"Noto Sans TC",sans-serif} button,input,select,textarea{font:inherit}
-    .app{display:grid;grid-template-columns:360px 1fr 345px;height:100vh;overflow:hidden}.side{border-right:1px solid #333;background:#161616;display:flex;flex-direction:column}.main{display:flex;flex-direction:column;min-width:0}.settings{border-left:1px solid #333;background:#111;padding:12px;overflow:auto}
-    .top{display:flex;align-items:center;justify-content:space-between;padding:14px;border-bottom:1px solid #333}.top h2{font-size:17px;margin:0}.btn{border:1px solid #444;background:#252525;color:#fff;border-radius:8px;padding:9px 12px;font-weight:700;cursor:pointer}.btn.primary{background:#f4c542;color:#111;border-color:#f4c542}.btn.danger{background:#702222}.btn.warn{background:#3a2f14}.btn.active{background:#f4c542;color:#111}.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:10px;border-bottom:1px solid #333}.filters{padding:10px;display:grid;gap:8px;border-bottom:1px solid #333}.filters input,.filters select,.settings input,.settings select,.settings textarea,.reply input{background:#222;color:#fff;border:1px solid #3a3a3a;border-radius:8px;padding:10px;width:100%}.filters-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    .list{overflow:auto;flex:1}.item{padding:12px;border-bottom:1px solid #2f2f2f;cursor:pointer;background:#191919}.item:hover,.item.active{background:#262626}.item-title{font-weight:900;font-size:16px;display:flex;gap:8px;align-items:center}.pill{font-size:12px;border-radius:999px;padding:2px 7px;background:#145c36;color:#39ff88}.pill.off{background:#642323;color:#ffabab}.unread{background:#e83d3d;color:#fff;border-radius:999px;min-width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;font-size:12px}.meta{font-size:12px;color:#cfcfcf;margin-top:4px;line-height:1.45}.snippet{font-size:13px;color:#ddd;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .chat-head{padding:12px 14px;border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-title{font-size:18px;font-weight:900}.chat-sub{font-size:12px;color:#ccc;margin-top:3px}.actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.msgs{flex:1;overflow:auto;padding:18px;background:#101010}.msg{max-width:70%;padding:10px 12px;border-radius:12px;margin-bottom:10px;white-space:pre-wrap;line-height:1.4}.msg.visitor{background:#2b2b2b;margin-right:auto}.msg.agent{background:#f4c542;color:#111;margin-left:auto}.msg-time{font-size:11px;opacity:.65;margin-top:4px}.quick{display:flex;gap:6px;padding:10px;border-top:1px solid #333;overflow-x:auto}.quick button{white-space:nowrap}.reply{display:flex;gap:8px;padding:10px;border-top:1px solid #333}.reply input{flex:1}.empty{display:flex;align-items:center;justify-content:center;color:#aaa;height:100%}
-    .settings h3{margin:8px 0 12px}.settings label{display:block;font-size:13px;color:#ddd;margin:12px 0 6px}.settings textarea{min-height:72px;resize:vertical}.settings .hint{font-size:12px;color:#f4c542;line-height:1.4}.info{font-size:12px;color:#ddd;line-height:1.55;background:#191919;border:1px solid #333;border-radius:10px;padding:10px;margin-top:10px;word-break:break-all}.hidden{display:none!important}
-    @media(max-width:1100px){.app{grid-template-columns:320px 1fr}.settings{display:none}.settings.show{display:block;position:fixed;right:0;top:0;bottom:0;width:345px;z-index:20}}
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #0f0f0f;
+      color: #fff;
+      font-family: Arial, "Noto Sans TC", sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .app {
+      width: 100vw;
+      height: 100vh;
+      max-height: 100vh;
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr) 345px;
+      grid-template-rows: 100vh;
+      overflow: hidden;
+      background: #0f0f0f;
+    }
+
+    .side {
+      min-height: 0;
+      height: 100vh;
+      border-right: 1px solid #333;
+      background: #161616;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .main {
+      min-width: 0;
+      min-height: 0;
+      height: 100vh;
+      max-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #0f0f0f;
+    }
+
+    .settings {
+      height: 100vh;
+      max-height: 100vh;
+      min-height: 0;
+      border-left: 1px solid #333;
+      background: #111;
+      padding: 12px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .top {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 14px;
+      border-bottom: 1px solid #333;
+      background: #161616;
+    }
+
+    .top h2 {
+      font-size: 17px;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    .top > div {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: nowrap;
+    }
+
+    .btn {
+      border: 1px solid #444;
+      background: #252525;
+      color: #fff;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform .08s ease, opacity .08s ease, background .08s ease;
+      white-space: nowrap;
+    }
+
+    .btn:hover {
+      opacity: .92;
+    }
+
+    .btn:active {
+      transform: scale(.98);
+    }
+
+    .btn.primary {
+      background: #f4c542;
+      color: #111;
+      border-color: #f4c542;
+    }
+
+    .btn.danger {
+      background: #702222;
+      border-color: #8a3333;
+    }
+
+    .btn.warn {
+      background: #3a2f14;
+      border-color: #735b22;
+    }
+
+    .btn.active {
+      background: #f4c542;
+      color: #111;
+      border-color: #f4c542;
+    }
+
+    .btn.sound-on {
+      background: #195f36;
+      border-color: #2aa65a;
+      color: #fff;
+    }
+
+    .btn.sound-off {
+      background: #4a2323;
+      border-color: #803535;
+      color: #fff;
+    }
+
+    .tabs {
+      flex: 0 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      padding: 10px;
+      border-bottom: 1px solid #333;
+      background: #161616;
+    }
+
+    .filters {
+      flex: 0 0 auto;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+      border-bottom: 1px solid #333;
+      background: #161616;
+    }
+
+    .filters input,
+    .filters select,
+    .settings input,
+    .settings select,
+    .settings textarea,
+    .reply input {
+      background: #222;
+      color: #fff;
+      border: 1px solid #3a3a3a;
+      border-radius: 8px;
+      padding: 10px;
+      width: 100%;
+      outline: none;
+    }
+
+    .filters input:focus,
+    .filters select:focus,
+    .settings input:focus,
+    .settings select:focus,
+    .settings textarea:focus,
+    .reply input:focus {
+      border-color: #f4c542;
+      box-shadow: 0 0 0 2px rgba(244,197,66,.12);
+    }
+
+    .filters-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .list {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      background: #151515;
+    }
+
+    .item {
+      padding: 12px;
+      border-bottom: 1px solid #2f2f2f;
+      cursor: pointer;
+      background: #191919;
+    }
+
+    .item:hover,
+    .item.active {
+      background: #262626;
+    }
+
+    .item-title {
+      font-weight: 900;
+      font-size: 16px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      font-size: 12px;
+      border-radius: 999px;
+      padding: 2px 7px;
+      background: #145c36;
+      color: #39ff88;
+    }
+
+    .pill.off {
+      background: #642323;
+      color: #ffabab;
+    }
+
+    .unread {
+      background: #e83d3d;
+      color: #fff;
+      border-radius: 999px;
+      min-width: 20px;
+      height: 20px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .meta {
+      font-size: 12px;
+      color: #cfcfcf;
+      margin-top: 4px;
+      line-height: 1.45;
+    }
+
+    .snippet {
+      font-size: 13px;
+      color: #ddd;
+      margin-top: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chat-head {
+      flex: 0 0 auto;
+      padding: 12px 14px;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: #101010;
+    }
+
+    .chat-title {
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .chat-sub {
+      font-size: 12px;
+      color: #ccc;
+      margin-top: 3px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    #chatPanel {
+      height: 100%;
+      max-height: 100%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .msgs {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 18px;
+      background: #101010;
+    }
+
+    .msg {
+      max-width: 70%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      white-space: pre-wrap;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .msg.visitor {
+      background: #2b2b2b;
+      margin-right: auto;
+    }
+
+    .msg.agent {
+      background: #f4c542;
+      color: #111;
+      margin-left: auto;
+    }
+
+    .msg-time {
+      font-size: 11px;
+      opacity: .65;
+      margin-top: 4px;
+    }
+
+    .quick {
+      flex: 0 0 auto;
+      display: flex;
+      gap: 6px;
+      padding: 10px;
+      border-top: 1px solid #333;
+      overflow-x: auto;
+      overflow-y: hidden;
+      background: #111;
+      white-space: nowrap;
+    }
+
+    .quick button {
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+
+    .reply {
+      flex: 0 0 auto;
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid #333;
+      background: #111;
+    }
+
+    .reply input {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .empty {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #aaa;
+      background: #0f0f0f;
+    }
+
+    .settings h3 {
+      margin: 8px 0 12px;
+      font-size: 18px;
+    }
+
+    .settings label {
+      display: block;
+      font-size: 13px;
+      color: #ddd;
+      margin: 12px 0 6px;
+    }
+
+    .settings textarea {
+      min-height: 72px;
+      max-height: 150px;
+      resize: vertical;
+    }
+
+    .settings .hint {
+      font-size: 12px;
+      color: #f4c542;
+      line-height: 1.4;
+    }
+
+    .info {
+      font-size: 12px;
+      color: #ddd;
+      line-height: 1.55;
+      background: #191919;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 10px;
+      margin-top: 10px;
+      word-break: break-all;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media(max-width:1100px) {
+      .app {
+        grid-template-columns: 320px minmax(0, 1fr);
+      }
+
+      .settings {
+        display: none;
+      }
+
+      .settings.show {
+        display: block;
+        position: fixed;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        width: 345px;
+        z-index: 20;
+      }
+    }
   </style>
 </head>
+
 <body>
 <div class="app">
   <aside class="side">
-    <div class="top"><h2>對話列表 <span id="totalUnread" class="unread hidden">0</span></h2><div><button class="btn" id="soundBtn">啟用提示音</button><button class="btn primary" id="logoutBtn">登出</button></div></div>
-    <div class="tabs"><button class="btn active" data-box="inbox">進行中</button><button class="btn" data-box="archive">封存</button><button class="btn" data-box="trash">垃圾桶</button></div>
-    <div class="filters"><input id="search" placeholder="搜尋姓名 / 來源 / 活動 / 訊息"><div class="filters-row"><select id="statusFilter"><option value="">全部狀態</option><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select><select id="onlineFilter"><option value="">全部在線</option><option value="1">在線</option><option value="0">離線</option></select></div></div>
+    <div class="top">
+      <h2>對話列表 <span id="totalUnread" class="unread hidden">0</span></h2>
+      <div>
+        <button class="btn sound-off" id="soundBtn">提示音：關</button>
+        <button class="btn primary" id="logoutBtn">登出</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="btn active" data-box="inbox">進行中</button>
+      <button class="btn" data-box="archive">封存</button>
+      <button class="btn" data-box="trash">垃圾桶</button>
+    </div>
+
+    <div class="filters">
+      <input id="search" placeholder="搜尋姓名 / 來源 / 活動 / 訊息">
+
+      <div class="filters-row">
+        <select id="statusFilter">
+          <option value="">全部狀態</option>
+          <option value="open">待處理</option>
+          <option value="pending">等待客戶</option>
+          <option value="closed">已結束</option>
+        </select>
+
+        <select id="onlineFilter">
+          <option value="">全部在線</option>
+          <option value="1">在線</option>
+          <option value="0">離線</option>
+        </select>
+      </div>
+    </div>
+
     <div id="list" class="list"></div>
   </aside>
+
   <main class="main">
     <div id="chatEmpty" class="empty">請選擇一個對話</div>
-    <div id="chatPanel" class="main hidden">
-      <div class="chat-head"><div><div class="chat-title" id="convTitle">-</div><div class="chat-sub" id="convSub">-</div></div><div class="actions" id="convActions"></div></div>
+
+    <div id="chatPanel" class="hidden">
+      <div class="chat-head">
+        <div>
+          <div class="chat-title" id="convTitle">-</div>
+          <div class="chat-sub" id="convSub">-</div>
+        </div>
+
+        <div class="actions" id="convActions"></div>
+      </div>
+
       <div id="msgs" class="msgs"></div>
+
       <div id="quick" class="quick"></div>
-      <div class="reply"><input id="replyInput" placeholder="輸入回覆內容..."><button class="btn primary" id="sendBtn">送出</button></div>
+
+      <div class="reply">
+        <input id="replyInput" placeholder="輸入回覆內容...">
+        <button class="btn primary" id="sendBtn">送出</button>
+      </div>
     </div>
   </main>
+
   <aside class="settings" id="settingsPanel">
     <h3>客服狀態 / 話術 / 顯示名稱</h3>
-    <label>目前客服狀態</label><select id="supportStatus"><option value="online">在線</option><option value="offline">離線</option></select>
-    <label>聊天窗口標題</label><input id="widgetTitle">
-    <label>在線招呼語</label><textarea id="onlineGreeting"></textarea>
-    <label>離線招呼語</label><textarea id="offlineGreeting"></textarea>
-    <label>SOP 快捷話術（一行一則）</label><textarea id="quickReplies"></textarea>
-    <label>客服顯示名稱（一行一組：帳號=客戶看到的名稱）</label><textarea id="agentDisplayNames"></textarea>
-    <div class="hint">例：<br>admin=客服小雅<br>admin1=F1專員<br>bbs01=VIP專員</div>
+
+    <label>目前客服狀態</label>
+    <select id="supportStatus">
+      <option value="online">在線</option>
+      <option value="offline">離線</option>
+    </select>
+
+    <label>聊天窗口標題</label>
+    <input id="widgetTitle">
+
+    <label>在線招呼語</label>
+    <textarea id="onlineGreeting"></textarea>
+
+    <label>離線招呼語</label>
+    <textarea id="offlineGreeting"></textarea>
+
+    <label>SOP 快捷話術（一行一則）</label>
+    <textarea id="quickReplies"></textarea>
+
+    <label>客服顯示名稱（一行一組：帳號=客戶看到的名稱）</label>
+    <textarea id="agentDisplayNames"></textarea>
+
+    <div class="hint">
+      例：<br>
+      admin=客服小雅<br>
+      admin1=F1專員<br>
+      bbs01=VIP專員
+    </div>
+
     <button class="btn primary" id="saveSettings" style="margin-top:10px">儲存客服設定</button>
+
     <div id="convInfo" class="info">尚未選擇對話</div>
   </aside>
 </div>
-<script src="/socket.io/socket.io.js"></script>
-<script>
-let me=null, settings=null, conversations=[], currentId='', currentBox='inbox', soundEnabled=false, audioCtx=null;
-const renderedIds=new Set();
-const $=id=>document.getElementById(id);
-const socket=io();
 
-function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function fmt(t){ if(!t) return ''; const d=new Date(t); return isNaN(d)?t:d.toLocaleString('zh-TW',{hour12:false}); }
-function networkLabel(c){ return c.network_effective_type || c.network_type || '未知（瀏覽器未提供）'; }
-function regionLabel(c){ return [c.ip_country_zh,c.ip_region,c.ip_city].filter(Boolean).join(' / ') || '未知'; }
-function updateTitle(){ const n=conversations.reduce((a,c)=>a+Number(c.unread_count||0),0); document.title=n?`(${n}) 客服後台`:'客服後台'; $('totalUnread').textContent=n; $('totalUnread').classList.toggle('hidden',!n); }
-function beep(){ if(!soundEnabled) return; try{ if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)(); const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.value=880; g.gain.value=.18; o.connect(g); g.connect(audioCtx.destination); o.start(); setTimeout(()=>{o.frequency.value=660},120); setTimeout(()=>{o.stop()},240); }catch(e){} }
-async function api(url,opt={}){ const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opt}); if(r.status===401) location.href='/admin/login.html'; return r; }
-async function init(){ const meRes=await api('/api/me'); const mj=await meRes.json(); me=mj.user; await loadSettings(); await loadConversations(); bind(); }
-async function loadSettings(){ const r=await api('/api/settings'); settings=await r.json(); $('supportStatus').value=settings.support_status||'online'; $('widgetTitle').value=settings.title||''; $('onlineGreeting').value=settings.online_greeting||''; $('offlineGreeting').value=settings.offline_greeting||''; $('quickReplies').value=(settings.quick_replies||[]).join('\n'); $('agentDisplayNames').value=settings.agent_display_names_text || settings.agent_display_names || ''; renderQuick(); }
-async function saveSettings(){ const payload={support_status:$('supportStatus').value, widget_title:$('widgetTitle').value, online_greeting:$('onlineGreeting').value, offline_greeting:$('offlineGreeting').value, quick_replies:$('quickReplies').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean), agent_display_names:$('agentDisplayNames').value}; const r=await api('/api/settings',{method:'PATCH',body:JSON.stringify(payload)}); const j=await r.json(); settings=j.settings; $('agentDisplayNames').value=settings.agent_display_names_text || settings.agent_display_names || ''; renderQuick(); alert('已儲存'); }
-async function loadConversations(){ const r=await api('/api/conversations?box='+currentBox); conversations=await r.json(); renderList(); updateTitle(); }
-function renderList(){ const q=$('search').value.toLowerCase(); const st=$('statusFilter').value; const on=$('onlineFilter').value; const list=$('list'); list.innerHTML=''; conversations.filter(c=>{ const hay=[c.visitor_name,c.source_title,c.source_campaign,c.last_message,c.ip_country_zh,c.ip_city,c.device_model].join(' ').toLowerCase(); if(q && !hay.includes(q)) return false; if(st && c.status!==st) return false; if(on!=='' && String(c.visitor_online)!==on) return false; return true; }).forEach(c=>{ const div=document.createElement('div'); div.className='item '+(c.id===currentId?'active':''); div.onclick=()=>openConversation(c.id); div.innerHTML=`<div class="item-title">${esc(c.visitor_name||'訪客')} <span class="pill ${c.visitor_online?'':'off'}">${c.visitor_online?'在線':'離線'}</span>${c.unread_count?`<span class="unread">${c.unread_count}</span>`:''}</div><div class="meta">來源：${esc(c.source_title||c.source_site||'-')} ｜ ${esc(c.source_campaign||'-')}</div><div class="meta">地區：${esc(regionLabel(c))} ｜ 裝置：${esc(c.device_model||c.device_type||'-')}</div><div class="snippet">${esc(c.last_message||'')}</div><div class="meta">${fmt(c.updated_at)}</div>`; list.appendChild(div); }); }
-async function openConversation(id){ currentId=id; renderedIds.clear(); socket.emit('join',id); await api('/api/conversations/'+id+'/read',{method:'POST'}); const r=await api('/api/conversations/'+id); const j=await r.json(); $('chatEmpty').classList.add('hidden'); $('chatPanel').classList.remove('hidden'); renderConversation(j.conversation,j.messages); await loadConversations(); }
-function renderConversation(c,msgs){ $('convTitle').textContent=c.visitor_name||'訪客'; $('convSub').textContent=`ID: ${c.id} ｜ 建立：${fmt(c.created_at)} ｜ 最後上線：${fmt(c.visitor_last_seen)}`; $('convActions').innerHTML=actionsHtml(c); $('convInfo').innerHTML=infoHtml(c); const box=$('msgs'); box.innerHTML=''; msgs.forEach(renderMessage); box.scrollTop=box.scrollHeight; }
-function actionsHtml(c){ if(c.folder==='trash') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="deleteConv()">永久刪除</button>`; if(c.folder==='archive') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="trashConv()">刪除</button>`; return `<button class="btn" onclick="markRead()">標記已讀</button><button class="btn warn" onclick="archiveConv()">封存</button><button class="btn danger" onclick="trashConv()">刪除</button><button class="btn primary" onclick="refreshAll()">刷新</button>`; }
-function infoHtml(c){ return `<b>來源資訊</b><br>落地頁：${esc(c.source_title||'-')}<br>活動：${esc(c.source_campaign||'-')}<br>網址：${esc(c.source_url||'-')}<hr><b>IP / 地區</b><br>IP：${esc(c.ip_address||'-')}<br>地區：${esc(regionLabel(c))}<br>ISP：${esc(c.ip_isp||'-')}<hr><b>設備資訊</b><br>裝置：${esc(c.device_model||'-')}<br>類型：${esc(c.device_type||'-')}<br>系統：${esc(c.device_os||'-')}<br>瀏覽器：${esc(c.browser||'-')}<br>螢幕：${esc(c.screen_size||'-')}<br>語言：${esc(c.language||'-')}<br>時區：${esc(c.timezone||'-')}<br>網路：${esc(networkLabel(c))}<br><br><b>User-Agent</b><br>${esc(c.user_agent||'-')}`; }
-function renderMessage(m){ const key=m.id?`id:${m.id}`:`${m.sender_type}|${m.sender_name}|${m.body}|${m.created_at}`; if(renderedIds.has(key)) return; renderedIds.add(key); const d=document.createElement('div'); d.className='msg '+(m.sender_type==='visitor'?'visitor':'agent'); d.innerHTML=`${m.sender_type==='agent'&&m.sender_name?esc(m.sender_name)+': ':''}${esc(m.body)}<div class="msg-time">${fmt(m.created_at)}${m.sender_login?' ｜ 帳號：'+esc(m.sender_login):''}</div>`; $('msgs').appendChild(d); $('msgs').scrollTop=$('msgs').scrollHeight; }
-function renderQuick(){ const quicks=($('quickReplies').value||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean); $('quick').innerHTML=''; quicks.forEach(q=>{ const b=document.createElement('button'); b.className='btn'; b.textContent=q; b.onclick=()=>{$('replyInput').value=q;$('replyInput').focus();}; $('quick').appendChild(b); }); }
-async function sendReply(){ const body=$('replyInput').value.trim(); if(!body||!currentId)return; $('replyInput').value=''; const r=await api('/api/conversations/'+currentId+'/messages',{method:'POST',body:JSON.stringify({body})}); const m=await r.json(); renderMessage(m); await loadConversations(); }
-async function markRead(){ if(currentId){await api('/api/conversations/'+currentId+'/read',{method:'POST'}); await loadConversations();} }
-async function archiveConv(){ if(currentId&&confirm('確定封存？')){await api('/api/conversations/'+currentId+'/archive',{method:'POST'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
-async function trashConv(){ if(currentId&&confirm('確定移到垃圾桶？')){await api('/api/conversations/'+currentId+'/trash',{method:'POST'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
-async function restoreConv(){ if(currentId){await api('/api/conversations/'+currentId+'/restore',{method:'POST'}); await loadConversations(); openConversation(currentId);} }
-async function deleteConv(){ if(currentId&&confirm('永久刪除後無法恢復，確定？')){await api('/api/conversations/'+currentId,{method:'DELETE'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
-async function refreshAll(){ await loadConversations(); if(currentId) await openConversation(currentId); }
-function bind(){ document.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-box]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentBox=b.dataset.box; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); ['search','statusFilter','onlineFilter'].forEach(id=>$(id).addEventListener('input',renderList)); $('saveSettings').onclick=saveSettings; $('sendBtn').onclick=sendReply; $('replyInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendReply();}); $('logoutBtn').onclick=async()=>{await api('/api/logout',{method:'POST'});location.href='/admin/login.html';}; $('soundBtn').onclick=()=>{soundEnabled=true; beep(); $('soundBtn').textContent='提示音已啟用';}; }
-socket.on('new_conversation', c=>{ conversations.unshift(c); renderList(); updateTitle(); beep(); });
-socket.on('conversation_updated', c=>{ const idx=conversations.findIndex(x=>x.id===c.id); const old=idx>=0?conversations[idx]:null; if(c.folder===currentBox || currentBox==='all'){ if(idx>=0) conversations[idx]=c; else conversations.unshift(c); } else if(idx>=0) conversations.splice(idx,1); renderList(); updateTitle(); if(old && Number(c.unread_count||0)>Number(old.unread_count||0) && c.last_sender_type==='visitor') beep(); if(currentId===c.id){ $('convSub').textContent=`ID: ${c.id} ｜ 建立：${fmt(c.created_at)} ｜ 最後上線：${fmt(c.visitor_last_seen)}`; $('convInfo').innerHTML=infoHtml(c); } });
-socket.on('conversation_deleted', ({id})=>{ conversations=conversations.filter(c=>c.id!==id); if(currentId===id){currentId='';$('chatPanel').classList.add('hidden');$('chatEmpty').classList.remove('hidden');} renderList(); updateTitle(); });
-socket.on('message', m=>{ if(currentId===m.conversation_id){ renderMessage(m); if(m.sender_type==='visitor') api('/api/conversations/'+currentId+'/read',{method:'POST'}); } else if(m.sender_type==='visitor') beep(); });
-window.archiveConv=archiveConv; window.trashConv=trashConv; window.restoreConv=restoreConv; window.deleteConv=deleteConv; window.markRead=markRead; window.refreshAll=refreshAll;
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+let me = null;
+let settings = null;
+let conversations = [];
+let currentId = '';
+let currentBox = 'inbox';
+
+let soundEnabled = localStorage.getItem('ccs_admin_sound_enabled') === '1';
+let audioCtx = null;
+let lastBeepAt = 0;
+
+const renderedIds = new Set();
+const $ = id => document.getElementById(id);
+const socket = io();
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#39;'
+  }[c]));
+}
+
+function fmt(t) {
+  if (!t) return '';
+
+  const d = new Date(t);
+
+  return isNaN(d)
+    ? t
+    : d.toLocaleString('zh-TW', { hour12:false });
+}
+
+function networkLabel(c) {
+  return c.network_effective_type || c.network_type || '未知（瀏覽器未提供）';
+}
+
+function regionLabel(c) {
+  return [c.ip_country_zh, c.ip_region, c.ip_city].filter(Boolean).join(' / ') || '未知';
+}
+
+function updateTitle() {
+  const n = conversations.reduce((a,c) => a + Number(c.unread_count || 0), 0);
+
+  document.title = n ? `(${n}) 客服後台` : '客服後台';
+
+  $('totalUnread').textContent = n;
+  $('totalUnread').classList.toggle('hidden', !n);
+}
+
+function updateSoundButton() {
+  const btn = $('soundBtn');
+
+  if (!btn) return;
+
+  if (soundEnabled) {
+    btn.textContent = '提示音：開';
+    btn.classList.add('sound-on');
+    btn.classList.remove('sound-off');
+  } else {
+    btn.textContent = '提示音：關';
+    btn.classList.add('sound-off');
+    btn.classList.remove('sound-on');
+  }
+}
+
+async function ensureAudioContext() {
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    if (audioCtx.state === 'suspended') {
+      await audioCtx.resume();
+    }
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+async function beep(force = false) {
+  if (!soundEnabled && !force) return;
+
+  const now = Date.now();
+
+  if (!force && now - lastBeepAt < 700) {
+    return;
+  }
+
+  lastBeepAt = now;
+
+  try {
+    const ok = await ensureAudioContext();
+    if (!ok) return;
+
+    /*
+      較大聲的叮咚音：
+      使用兩段音 + 較高 gain。
+      如果覺得太大聲，可把 master.gain.value 由 0.55 改成 0.35。
+    */
+    const master = audioCtx.createGain();
+    master.gain.value = 0.55;
+    master.connect(audioCtx.destination);
+
+    function tone(freq, start, duration, gainValue) {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime + start);
+
+      gain.gain.setValueAtTime(0.001, audioCtx.currentTime + start);
+      gain.gain.exponentialRampToValueAtTime(gainValue, audioCtx.currentTime + start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + start + duration);
+
+      osc.connect(gain);
+      gain.connect(master);
+
+      osc.start(audioCtx.currentTime + start);
+      osc.stop(audioCtx.currentTime + start + duration + 0.03);
+    }
+
+    tone(980, 0, 0.18, 0.9);
+    tone(1320, 0.16, 0.22, 0.85);
+  } catch (e) {}
+}
+
+async function toggleSound() {
+  soundEnabled = !soundEnabled;
+
+  localStorage.setItem('ccs_admin_sound_enabled', soundEnabled ? '1' : '0');
+
+  updateSoundButton();
+
+  if (soundEnabled) {
+    await beep(true);
+  }
+}
+
+async function api(url, opt = {}) {
+  const r = await fetch(url, {
+    headers: { 'Content-Type':'application/json' },
+    ...opt
+  });
+
+  if (r.status === 401) {
+    location.href = '/admin/login.html';
+  }
+
+  return r;
+}
+
+async function init() {
+  const meRes = await api('/api/me');
+  const mj = await meRes.json();
+
+  me = mj.user;
+
+  updateSoundButton();
+
+  await loadSettings();
+  await loadConversations();
+
+  bind();
+}
+
+async function loadSettings() {
+  const r = await api('/api/settings');
+
+  settings = await r.json();
+
+  $('supportStatus').value = settings.support_status || 'online';
+  $('widgetTitle').value = settings.title || '';
+  $('onlineGreeting').value = settings.online_greeting || '';
+  $('offlineGreeting').value = settings.offline_greeting || '';
+  $('quickReplies').value = (settings.quick_replies || []).join('\n');
+  $('agentDisplayNames').value = settings.agent_display_names_text || settings.agent_display_names || '';
+
+  renderQuick();
+}
+
+async function saveSettings() {
+  const payload = {
+    support_status: $('supportStatus').value,
+    widget_title: $('widgetTitle').value,
+    online_greeting: $('onlineGreeting').value,
+    offline_greeting: $('offlineGreeting').value,
+    quick_replies: $('quickReplies').value
+      .split(/\r?\n/)
+      .map(x => x.trim())
+      .filter(Boolean),
+    agent_display_names: $('agentDisplayNames').value
+  };
+
+  const r = await api('/api/settings', {
+    method: 'PATCH',
+    body: JSON.stringify(payload)
+  });
+
+  const j = await r.json();
+
+  settings = j.settings;
+
+  $('agentDisplayNames').value = settings.agent_display_names_text || settings.agent_display_names || '';
+
+  renderQuick();
+
+  alert('已儲存');
+}
+
+async function loadConversations() {
+  const r = await api('/api/conversations?box=' + currentBox);
+
+  conversations = await r.json();
+
+  renderList();
+  updateTitle();
+}
+
+function renderList() {
+  const q = $('search').value.toLowerCase();
+  const st = $('statusFilter').value;
+  const on = $('onlineFilter').value;
+  const list = $('list');
+
+  list.innerHTML = '';
+
+  conversations
+    .filter(c => {
+      const hay = [
+        c.visitor_name,
+        c.source_title,
+        c.source_campaign,
+        c.last_message,
+        c.ip_country_zh,
+        c.ip_city,
+        c.device_model
+      ].join(' ').toLowerCase();
+
+      if (q && !hay.includes(q)) return false;
+      if (st && c.status !== st) return false;
+      if (on !== '' && String(c.visitor_online) !== on) return false;
+
+      return true;
+    })
+    .forEach(c => {
+      const div = document.createElement('div');
+
+      div.className = 'item ' + (c.id === currentId ? 'active' : '');
+
+      div.onclick = () => openConversation(c.id);
+
+      div.innerHTML = `
+        <div class="item-title">
+          ${esc(c.visitor_name || '訪客')}
+          <span class="pill ${c.visitor_online ? '' : 'off'}">${c.visitor_online ? '在線' : '離線'}</span>
+          ${c.unread_count ? `<span class="unread">${c.unread_count}</span>` : ''}
+        </div>
+        <div class="meta">來源：${esc(c.source_title || c.source_site || '-')} ｜ ${esc(c.source_campaign || '-')}</div>
+        <div class="meta">地區：${esc(regionLabel(c))} ｜ 裝置：${esc(c.device_model || c.device_type || '-')}</div>
+        <div class="snippet">${esc(c.last_message || '')}</div>
+        <div class="meta">${fmt(c.updated_at)}</div>
+      `;
+
+      list.appendChild(div);
+    });
+}
+
+async function openConversation(id) {
+  currentId = id;
+  renderedIds.clear();
+
+  socket.emit('join', id);
+
+  await api('/api/conversations/' + id + '/read', {
+    method: 'POST'
+  });
+
+  const r = await api('/api/conversations/' + id);
+  const j = await r.json();
+
+  $('chatEmpty').classList.add('hidden');
+  $('chatPanel').classList.remove('hidden');
+
+  renderConversation(j.conversation, j.messages);
+
+  await loadConversations();
+}
+
+function renderConversation(c, msgs) {
+  $('convTitle').textContent = c.visitor_name || '訪客';
+
+  $('convSub').textContent =
+    `ID: ${c.id} ｜ 建立：${fmt(c.created_at)} ｜ 最後上線：${fmt(c.visitor_last_seen)}`;
+
+  $('convActions').innerHTML = actionsHtml(c);
+  $('convInfo').innerHTML = infoHtml(c);
+
+  const box = $('msgs');
+
+  box.innerHTML = '';
+
+  msgs.forEach(renderMessage);
+
+  box.scrollTop = box.scrollHeight;
+}
+
+function actionsHtml(c) {
+  if (c.folder === 'trash') {
+    return `
+      <button class="btn" onclick="restoreConv()">還原</button>
+      <button class="btn danger" onclick="deleteConv()">永久刪除</button>
+    `;
+  }
+
+  if (c.folder === 'archive') {
+    return `
+      <button class="btn" onclick="restoreConv()">還原</button>
+      <button class="btn danger" onclick="trashConv()">刪除</button>
+    `;
+  }
+
+  return `
+    <button class="btn" onclick="markRead()">標記已讀</button>
+    <button class="btn warn" onclick="archiveConv()">封存</button>
+    <button class="btn danger" onclick="trashConv()">刪除</button>
+    <button class="btn primary" onclick="refreshAll()">刷新</button>
+  `;
+}
+
+function infoHtml(c) {
+  return `
+    <b>來源資訊</b><br>
+    落地頁：${esc(c.source_title || '-')}<br>
+    活動：${esc(c.source_campaign || '-')}<br>
+    網址：${esc(c.source_url || '-')}<hr>
+
+    <b>IP / 地區</b><br>
+    IP：${esc(c.ip_address || '-')}<br>
+    地區：${esc(regionLabel(c))}<br>
+    ISP：${esc(c.ip_isp || '-')}<hr>
+
+    <b>設備資訊</b><br>
+    裝置：${esc(c.device_model || '-')}<br>
+    類型：${esc(c.device_type || '-')}<br>
+    系統：${esc(c.device_os || '-')}<br>
+    瀏覽器：${esc(c.browser || '-')}<br>
+    螢幕：${esc(c.screen_size || '-')}<br>
+    語言：${esc(c.language || '-')}<br>
+    時區：${esc(c.timezone || '-')}<br>
+    網路：${esc(networkLabel(c))}<br><br>
+
+    <b>User-Agent</b><br>
+    ${esc(c.user_agent || '-')}
+  `;
+}
+
+function renderMessage(m) {
+  const key = m.id
+    ? `id:${m.id}`
+    : `${m.sender_type}|${m.sender_name}|${m.body}|${m.created_at}`;
+
+  if (renderedIds.has(key)) return;
+
+  renderedIds.add(key);
+
+  const d = document.createElement('div');
+
+  d.className = 'msg ' + (m.sender_type === 'visitor' ? 'visitor' : 'agent');
+
+  d.innerHTML = `
+    ${m.sender_type === 'agent' && m.sender_name ? esc(m.sender_name) + ': ' : ''}
+    ${esc(m.body)}
+    <div class="msg-time">
+      ${fmt(m.created_at)}${m.sender_login ? ' ｜ 帳號：' + esc(m.sender_login) : ''}
+    </div>
+  `;
+
+  $('msgs').appendChild(d);
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+}
+
+function renderQuick() {
+  const quicks = ($('quickReplies').value || '')
+    .split(/\r?\n/)
+    .map(x => x.trim())
+    .filter(Boolean);
+
+  $('quick').innerHTML = '';
+
+  quicks.forEach(q => {
+    const b = document.createElement('button');
+
+    b.className = 'btn';
+    b.textContent = q;
+
+    b.onclick = () => {
+      $('replyInput').value = q;
+      $('replyInput').focus();
+    };
+
+    $('quick').appendChild(b);
+  });
+}
+
+async function sendReply() {
+  const body = $('replyInput').value.trim();
+
+  if (!body || !currentId) return;
+
+  $('replyInput').value = '';
+
+  const r = await api('/api/conversations/' + currentId + '/messages', {
+    method: 'POST',
+    body: JSON.stringify({ body })
+  });
+
+  const m = await r.json();
+
+  renderMessage(m);
+
+  await loadConversations();
+}
+
+async function markRead() {
+  if (currentId) {
+    await api('/api/conversations/' + currentId + '/read', {
+      method: 'POST'
+    });
+
+    await loadConversations();
+  }
+}
+
+async function archiveConv() {
+  if (currentId && confirm('確定封存？')) {
+    await api('/api/conversations/' + currentId + '/archive', {
+      method: 'POST'
+    });
+
+    currentId = '';
+
+    await loadConversations();
+
+    $('chatPanel').classList.add('hidden');
+    $('chatEmpty').classList.remove('hidden');
+  }
+}
+
+async function trashConv() {
+  if (currentId && confirm('確定移到垃圾桶？')) {
+    await api('/api/conversations/' + currentId + '/trash', {
+      method: 'POST'
+    });
+
+    currentId = '';
+
+    await loadConversations();
+
+    $('chatPanel').classList.add('hidden');
+    $('chatEmpty').classList.remove('hidden');
+  }
+}
+
+async function restoreConv() {
+  if (currentId) {
+    await api('/api/conversations/' + currentId + '/restore', {
+      method: 'POST'
+    });
+
+    await loadConversations();
+
+    openConversation(currentId);
+  }
+}
+
+async function deleteConv() {
+  if (currentId && confirm('永久刪除後無法恢復，確定？')) {
+    await api('/api/conversations/' + currentId, {
+      method: 'DELETE'
+    });
+
+    currentId = '';
+
+    await loadConversations();
+
+    $('chatPanel').classList.add('hidden');
+    $('chatEmpty').classList.remove('hidden');
+  }
+}
+
+async function refreshAll() {
+  await loadConversations();
+
+  if (currentId) {
+    await openConversation(currentId);
+  }
+}
+
+function bind() {
+  document.querySelectorAll('[data-box]').forEach(b => {
+    b.onclick = () => {
+      document.querySelectorAll('[data-box]').forEach(x => x.classList.remove('active'));
+
+      b.classList.add('active');
+
+      currentBox = b.dataset.box;
+      currentId = '';
+
+      $('chatPanel').classList.add('hidden');
+      $('chatEmpty').classList.remove('hidden');
+
+      loadConversations();
+    };
+  });
+
+  ['search', 'statusFilter', 'onlineFilter'].forEach(id => {
+    $(id).addEventListener('input', renderList);
+  });
+
+  $('saveSettings').onclick = saveSettings;
+  $('sendBtn').onclick = sendReply;
+
+  $('replyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendReply();
+  });
+
+  $('logoutBtn').onclick = async () => {
+    await api('/api/logout', {
+      method: 'POST'
+    });
+
+    location.href = '/admin/login.html';
+  };
+
+  $('soundBtn').onclick = toggleSound;
+}
+
+socket.on('new_conversation', c => {
+  conversations.unshift(c);
+
+  renderList();
+  updateTitle();
+
+  beep();
+});
+
+socket.on('conversation_updated', c => {
+  const idx = conversations.findIndex(x => x.id === c.id);
+  const old = idx >= 0 ? conversations[idx] : null;
+
+  if (c.folder === currentBox || currentBox === 'all') {
+    if (idx >= 0) conversations[idx] = c;
+    else conversations.unshift(c);
+  } else if (idx >= 0) {
+    conversations.splice(idx, 1);
+  }
+
+  renderList();
+  updateTitle();
+
+  if (
+    old &&
+    Number(c.unread_count || 0) > Number(old.unread_count || 0) &&
+    c.last_sender_type === 'visitor'
+  ) {
+    beep();
+  }
+
+  if (currentId === c.id) {
+    $('convSub').textContent =
+      `ID: ${c.id} ｜ 建立：${fmt(c.created_at)} ｜ 最後上線：${fmt(c.visitor_last_seen)}`;
+
+    $('convInfo').innerHTML = infoHtml(c);
+  }
+});
+
+socket.on('conversation_deleted', ({ id }) => {
+  conversations = conversations.filter(c => c.id !== id);
+
+  if (currentId === id) {
+    currentId = '';
+
+    $('chatPanel').classList.add('hidden');
+    $('chatEmpty').classList.remove('hidden');
+  }
+
+  renderList();
+  updateTitle();
+});
+
+socket.on('message', m => {
+  if (currentId === m.conversation_id) {
+    renderMessage(m);
+
+    if (m.sender_type === 'visitor') {
+      api('/api/conversations/' + currentId + '/read', {
+        method: 'POST'
+      });
+    }
+  } else if (m.sender_type === 'visitor') {
+    beep();
+  }
+});
+
+window.archiveConv = archiveConv;
+window.trashConv = trashConv;
+window.restoreConv = restoreConv;
+window.deleteConv = deleteConv;
+window.markRead = markRead;
+window.refreshAll = refreshAll;
+
 init();
 </script>
 </body>
