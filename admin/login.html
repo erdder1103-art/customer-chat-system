@@ -1,1 +1,96 @@
-<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>客服登入</title><style>body{margin:0;font-family:Arial;background:#101010;color:#fff;display:grid;place-items:center;height:100vh}.card{width:360px;max-width:90vw;background:#181818;border:1px solid #d9a72e;border-radius:18px;padding:28px;box-shadow:0 12px 40px #0008}h1{margin:0 0 20px;color:#f4c542}input,button{width:100%;box-sizing:border-box;padding:13px;margin:8px 0;border-radius:10px;border:0}input{background:#252525;color:#fff}button{background:#f4c542;color:#111;font-weight:bold;cursor:pointer}.err{color:#ff7b7b;min-height:22px}</style></head><body><div class="card"><h1>客服後台登入</h1><input id="u" placeholder="帳號" value="admin"><input id="p" placeholder="密碼" type="password" value="123456"><button onclick="login()">登入</button><div class="err" id="err"></div></div><script>async function login(){const r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u.value,password:p.value})});if(r.ok) location.href='/admin/'; else err.textContent=(await r.json()).error||'登入失敗';}</script></body></html>
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>客服登入</title>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,"Noto Sans TC",sans-serif;background:#101010;color:#fff;display:grid;place-items:center;height:100vh}
+    .card{width:360px;max-width:90vw;background:#181818;border:1px solid #d9a72e;border-radius:18px;padding:28px;box-shadow:0 12px 40px #0008}
+    h1{margin:0 0 20px;color:#f4c542;font-size:26px}
+    label{display:block;font-size:13px;color:#ddd;margin:12px 0 6px}
+    input,button{width:100%;padding:13px;border-radius:10px;border:0;font-size:16px}
+    input{background:#252525;color:#fff;border:1px solid #333;outline:none}
+    input:focus{border-color:#f4c542;box-shadow:0 0 0 2px rgba(244,197,66,.12)}
+    button{background:#f4c542;color:#111;font-weight:bold;cursor:pointer;margin-top:16px}
+    button:active{transform:scale(.99)}
+    .err{color:#ff7b7b;min-height:22px;margin-top:12px;font-size:14px}
+    .hint{font-size:12px;color:#888;line-height:1.5;margin-top:12px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>客服後台登入</h1>
+
+    <form id="loginForm" autocomplete="off">
+      <label for="u">帳號</label>
+      <input
+        id="u"
+        name="ccs_admin_user"
+        placeholder="請輸入帳號"
+        value=""
+        autocomplete="off"
+        autocapitalize="off"
+        spellcheck="false">
+
+      <label for="p">密碼</label>
+      <input
+        id="p"
+        name="ccs_admin_pass"
+        placeholder="請輸入密碼"
+        type="password"
+        value=""
+        autocomplete="new-password">
+
+      <button type="submit">登入</button>
+      <div class="err" id="err"></div>
+      <div class="hint">如果瀏覽器仍自動帶入帳密，那是瀏覽器記住密碼，不是系統預設值。</div>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const u = document.getElementById('u');
+    const p = document.getElementById('p');
+    const err = document.getElementById('err');
+
+    // 防止舊版 HTML 或瀏覽器快取殘留預設值
+    window.addEventListener('pageshow', function () {
+      if (u.value === 'admin') u.value = '';
+      if (p.value === '123456') p.value = '';
+    });
+
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      err.textContent = '';
+
+      const username = u.value.trim();
+      const password = p.value;
+
+      if (!username || !password) {
+        err.textContent = '請輸入帳號與密碼';
+        return;
+      }
+
+      try {
+        const r = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        if (r.ok) {
+          location.href = '/admin/';
+          return;
+        }
+
+        const j = await r.json().catch(() => ({}));
+        err.textContent = j.error || '登入失敗';
+      } catch (error) {
+        err.textContent = '連線失敗，請稍後再試';
+      }
+    });
+  </script>
+</body>
+</html>
