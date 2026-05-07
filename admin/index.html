@@ -347,6 +347,91 @@
 .v13-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 12px}.v13-grid .btn{height:46px;border-radius:15px;font-weight:1000;background:#242424;border:1px solid rgba(244,197,66,.25);color:#fff}.v13-grid .btn:hover{border-color:#f4c542;color:#ffd45a}.backup-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}.backup-card{background:#1b1b1b;border:1px solid #333;border-radius:15px;padding:14px}.backup-card h4{margin:0 0 6px;color:#ffd45a}.backup-card p{margin:0 0 12px;color:#bbb;font-size:13px;line-height:1.45}.limit-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.limit-grid input{font-weight:900;text-align:center}.broadcast-history{display:grid;gap:8px;max-height:420px;overflow:auto}.broadcast-history-row{background:#1d1d1d;border:1px solid #333;border-radius:12px;padding:10px}.broadcast-history-title{font-weight:900;color:#ffd45a;margin-bottom:4px}.broadcast-history-meta{font-size:12px;color:#aaa;line-height:1.45}.broadcast-history-body{font-size:13px;color:#ddd;margin-top:6px;white-space:pre-wrap;max-height:82px;overflow:auto}.unreplied-chip{font-size:12px;color:#ffd45a;background:#1b160b;border:1px solid rgba(244,197,66,.28);border-radius:999px;padding:7px 9px;display:flex;align-items:center;gap:6px;justify-content:center}.unreplied-chip input{width:18px;height:18px;accent-color:#f4c542}.unreplied-mini{display:grid;grid-template-columns:1fr 90px;gap:8px;align-items:center}.unreplied-mini input{height:40px;text-align:center;font-weight:900}.v13-help{font-size:12px;color:#d6c27a;line-height:1.45;margin-top:6px}.backup-actions{display:grid;gap:8px}.backup-actions .btn{width:100%}
 @media(max-width:760px){.backup-cards,.limit-grid,.v13-grid{grid-template-columns:1fr}.unreplied-mini{grid-template-columns:1fr}}
 
+
+
+/* ===== V13.1 left floating bulk tools: does not shrink chat/list ===== */
+.side{
+  position:relative!important;
+  overflow:hidden!important;
+}
+.list{
+  padding-bottom:18px!important;
+}
+.batch-toolbar{
+  position:absolute!important;
+  left:10px!important;
+  right:10px!important;
+  bottom:12px!important;
+  z-index:50!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:10px!important;
+  padding:12px!important;
+  border:1px solid rgba(244,197,66,.45)!important;
+  border-radius:18px!important;
+  background:linear-gradient(180deg,rgba(22,22,22,.98),rgba(9,9,9,.98))!important;
+  box-shadow:0 18px 42px rgba(0,0,0,.72),0 0 0 1px rgba(255,255,255,.04) inset!important;
+  backdrop-filter:blur(8px)!important;
+  overflow:hidden!important;
+  white-space:normal!important;
+}
+.batch-toolbar.hidden{display:none!important;}
+.batch-count{
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:6px!important;
+  padding:9px 12px!important;
+  border-radius:999px!important;
+  background:rgba(244,197,66,.11)!important;
+  border:1px solid rgba(244,197,66,.35)!important;
+  color:#ffd45a!important;
+  font-size:13px!important;
+  font-weight:1000!important;
+}
+.batch-actions{
+  display:grid!important;
+  grid-template-columns:1fr 1fr!important;
+  gap:8px!important;
+  width:100%!important;
+}
+.batch-actions .btn{
+  width:100%!important;
+  min-width:0!important;
+  height:42px!important;
+  padding:0 8px!important;
+  border-radius:12px!important;
+  font-size:14px!important;
+  font-weight:1000!important;
+  line-height:1!important;
+  white-space:nowrap!important;
+  overflow:hidden!important;
+  text-overflow:ellipsis!important;
+}
+.batch-actions .btn.danger{
+  background:linear-gradient(135deg,#8d2525,#621818)!important;
+  border-color:#b43434!important;
+}
+.batch-actions .btn.warn{
+  background:linear-gradient(135deg,#4a390f,#2b220c)!important;
+  border-color:#8d6d1e!important;
+  color:#fff!important;
+}
+.batch-cancel{
+  grid-column:1 / -1!important;
+  background:#202020!important;
+  border-color:#464646!important;
+}
+.item.selected{
+  outline:1px solid rgba(244,197,66,.75)!important;
+  background:linear-gradient(90deg,rgba(244,197,66,.15),rgba(31,31,31,.96))!important;
+}
+@media(max-height:760px){
+  .batch-toolbar{padding:10px!important;gap:8px!important;}
+  .batch-actions .btn{height:38px!important;font-size:13px!important;}
+}
 </style>
 </head>
 <body>
