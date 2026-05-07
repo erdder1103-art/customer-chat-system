@@ -10,6 +10,7 @@ const bcrypt = require('bcryptjs');
 const Database = require('better-sqlite3');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
+const multer = require('multer');
 
 const app = express();
 const server = http.createServer(app);
@@ -34,6 +35,11 @@ const DATA_DIR =
 
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+const UPLOAD_DIR = path.join(DATA_DIR, 'uploads');
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
 
 const OLD_DB_PATH = path.join(__dirname, 'chat.sqlite');
@@ -100,6 +106,11 @@ CREATE TABLE IF NOT EXISTS messages (
   sender_name TEXT DEFAULT '',
   sender_login TEXT DEFAULT '',
   body TEXT NOT NULL,
+  attachment_url TEXT DEFAULT '',
+  attachment_name TEXT DEFAULT '',
+  attachment_type TEXT DEFAULT '',
+  attachment_mime TEXT DEFAULT '',
+  attachment_size INTEGER DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -155,6 +166,11 @@ function ensureColumn(table, column, definition) {
 ].forEach(([col, def]) => ensureColumn('conversations', col, def));
 
 ensureColumn('messages', 'sender_login', "TEXT DEFAULT ''");
+ensureColumn('messages', 'attachment_url', "TEXT DEFAULT ''");
+ensureColumn('messages', 'attachment_name', "TEXT DEFAULT ''");
+ensureColumn('messages', 'attachment_type', "TEXT DEFAULT ''");
+ensureColumn('messages', 'attachment_mime', "TEXT DEFAULT ''");
+ensureColumn('messages', 'attachment_size', 'INTEGER DEFAULT 0');
 
 db.prepare("UPDATE conversations SET folder='inbox' WHERE folder IS NULL OR folder='' OR folder NOT IN ('inbox','archive','trash')").run();
 db.prepare("UPDATE conversations SET unread_count=0 WHERE unread_count IS NULL").run();
@@ -222,6 +238,9 @@ app.use(session({
 
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/admin', express.static(path.join(__dirname, 'admin')));
+app.use('/uploads', express.static(UPLOAD_DIR, {
+  setHeaders: res => res.set('Cache-Control', 'public, max-age=31536000, immutable')
+}));
 
 function requireLogin(req, res, next) {
   if (req.session && req.session.user) return next();
@@ -234,6 +253,53 @@ function nowIso() {
 
 function clean(v, n = 500) {
   return String(v || '').slice(0, n);
+}
+
+
+function safeFileName(name) {
+  const ext = path.extname(String(name || '')).toLowerCase().replace(/[^.a-z0-9]/g, '').slice(0, 12);
+  return `${Date.now()}-${crypto.randomBytes(6).toString('hex')}${ext || '.bin'}`;
+}
+
+function attachmentType(mime) {
+  const m = String(mime || '').toLowerCase();
+  if (m.startsWith('image/')) return 'image';
+  if (m.startsWith('video/')) return 'video';
+  if (m.startsWith('audio/')) return 'audio';
+  return 'file';
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, UPLOAD_DIR),
+    filename: (req, file, cb) => cb(null, safeFileName(file.originalname))
+  }),
+  limits: {
+    fileSize: Number(process.env.MAX_UPLOAD_SIZE || 25 * 1024 * 1024)
+  },
+  fileFilter: (req, file, cb) => {
+    const allowed = [
+      'image/jpeg','image/png','image/gif','image/webp','image/svg+xml',
+      'video/mp4','video/webm','video/quicktime',
+      'audio/mpeg','audio/wav','audio/webm','audio/ogg',
+      'application/pdf','text/plain','text/csv','application/zip',
+      'application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    ];
+    if (allowed.includes(file.mimetype) || file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) cb(null, true);
+    else cb(new Error('不支援的檔案類型'));
+  }
+});
+
+function normalizeAttachment(input) {
+  const a = input && typeof input === 'object' ? input : {};
+  return {
+    attachment_url: clean(a.attachment_url || a.url || '', 1000),
+    attachment_name: clean(a.attachment_name || a.name || '', 240),
+    attachment_type: clean(a.attachment_type || a.type || '', 40),
+    attachment_mime: clean(a.attachment_mime || a.mime || '', 120),
+    attachment_size: Number(a.attachment_size || a.size || 0) || 0
+  };
 }
 
 function setting(key) {
@@ -277,14 +343,15 @@ function insertSystemMessage(conversationId, body) {
   if (!text) return null;
 
   const info = db.prepare(`
-    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, created_at)
-    VALUES (?,?,?,?,?,?)
+    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     conversationId,
     'agent',
     '',
     'system',
     text,
+    '', '', '', '', 0,
     nowIso()
   );
 
@@ -462,8 +529,10 @@ app.patch('/api/settings', requireLogin, (req, res) => {
 
               if (x && typeof x === 'object') {
                 const content = clean(x.content || x.body || x.text || '', 1500).trim();
-                const title = clean(x.title || x.name || '', 80).trim() || content.slice(0, 18);
-                return content ? { title, content } : null;
+                const title = clean(x.title || x.name || '', 80).trim() || content.slice(0, 18) || '圖片話術';
+                const att = normalizeAttachment(x);
+                if (!content && !att.attachment_url) return null;
+                return { title, content, ...att };
               }
 
               return null;
@@ -490,6 +559,27 @@ app.patch('/api/settings', requireLogin, (req, res) => {
   io.emit('settings_updated', publicConfig());
 
   res.json({ ok: true, settings: publicConfig() });
+});
+
+
+
+app.post('/api/upload', (req, res) => {
+  upload.single('file')(req, res, err => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'upload failed' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'no file' });
+    }
+    const data = {
+      attachment_url: `/uploads/${req.file.filename}`,
+      attachment_name: req.file.originalname || req.file.filename,
+      attachment_type: attachmentType(req.file.mimetype),
+      attachment_mime: req.file.mimetype || '',
+      attachment_size: req.file.size || 0
+    };
+    res.json({ ok: true, ...data });
+  });
 });
 
 app.get('/api/conversations', requireLogin, (req, res) => {
@@ -765,7 +855,7 @@ app.get('/api/widget/conversations/:id/messages', (req, res) => {
   }
 
   const messages = db.prepare(`
-    SELECT id, sender_type, sender_name, sender_login, body, created_at
+    SELECT id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, created_at
     FROM messages
     WHERE conversation_id=?
     ORDER BY id ASC
@@ -776,8 +866,9 @@ app.get('/api/widget/conversations/:id/messages', (req, res) => {
 
 app.post('/api/widget/conversations/:id/messages', (req, res) => {
   const body = String(req.body.body || '').trim();
+  const attachment = normalizeAttachment(req.body.attachment || req.body);
 
-  if (!body) {
+  if (!body && !attachment.attachment_url) {
     return res.status(400).json({ error: 'empty message' });
   }
 
@@ -788,14 +879,19 @@ app.post('/api/widget/conversations/:id/messages', (req, res) => {
   }
 
   const info = db.prepare(`
-    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, created_at)
-    VALUES (?,?,?,?,?,?)
+    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     req.params.id,
     'visitor',
     exists.visitor_name || '訪客',
     '',
     body,
+    attachment.attachment_url,
+    attachment.attachment_name,
+    attachment.attachment_type,
+    attachment.attachment_mime,
+    attachment.attachment_size,
     nowIso()
   );
 
@@ -826,8 +922,9 @@ app.post('/api/widget/conversations/:id/messages', (req, res) => {
 
 app.post('/api/conversations/:id/messages', requireLogin, (req, res) => {
   const body = String(req.body.body || '').trim();
+  const attachment = normalizeAttachment(req.body.attachment || req.body);
 
-  if (!body) {
+  if (!body && !attachment.attachment_url) {
     return res.status(400).json({ error: 'empty message' });
   }
 
@@ -841,14 +938,19 @@ app.post('/api/conversations/:id/messages', requireLogin, (req, res) => {
   const displayName = agentDisplayName(agent);
 
   const info = db.prepare(`
-    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, created_at)
-    VALUES (?,?,?,?,?,?)
+    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     req.params.id,
     'agent',
     displayName,
     agent,
     body,
+    attachment.attachment_url,
+    attachment.attachment_name,
+    attachment.attachment_type,
+    attachment.attachment_mime,
+    attachment.attachment_size,
     nowIso()
   );
 

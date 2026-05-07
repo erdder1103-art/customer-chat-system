@@ -336,6 +336,19 @@
     font-size:16px;
   }
 
+  #ccs-file-btn{
+    flex:0 0 auto;
+    width:48px;
+    height:48px;
+    border:0;
+    background:#2b2b2b;
+    color:#fff;
+    font-weight:700;
+    font-size:20px;
+    cursor:pointer;
+    border-radius:12px;
+  }
+
   #ccs-send{
     flex:0 0 auto;
     height:48px;
@@ -349,6 +362,12 @@
     border-radius:12px;
     padding:0 16px;
   }
+
+  .ccs-attach{margin-top:8px;}
+  .ccs-attach img{max-width:100%;border-radius:10px;display:block;}
+  .ccs-attach video{max-width:100%;border-radius:10px;display:block;background:#000;}
+  .ccs-attach a{color:#4da3ff;text-decoration:underline;word-break:break-all;}
+  .ccs-file-name{font-size:12px;opacity:.8;margin-top:4px;word-break:break-all;}
 
   @media (max-width: 768px){
     #ccs-box{
@@ -401,6 +420,8 @@
       <div id="ccs-msgs"></div>
 
       <div id="ccs-input">
+        <input id="ccs-file" type="file" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip" style="display:none" />
+        <button id="ccs-file-btn" type="button" title="上传图片/文件">＋</button>
         <input id="ccs-text" type="text" placeholder="请输入您的问题..." />
         <button id="ccs-send" type="button">发送</button>
       </div>
@@ -412,6 +433,8 @@
   const overlay = document.getElementById('ccs-overlay');
   const box = document.getElementById('ccs-box');
   const msgs = document.getElementById('ccs-msgs');
+  const fileInput = document.getElementById('ccs-file');
+  const fileBtn = document.getElementById('ccs-file-btn');
   const input = document.getElementById('ccs-text');
   const send = document.getElementById('ccs-send');
   const closeBtn = document.getElementById('ccs-close');
@@ -448,7 +471,21 @@
   }
 
 
-  function add(text, type, name) {
+  function attachmentHtml(a) {
+    if (!a || !a.attachment_url) return '';
+    const url = a.attachment_url;
+    const name = escapeHtml(a.attachment_name || '附件');
+    const type = a.attachment_type || '';
+    if (type === 'image') {
+      return `<div class="ccs-attach"><a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${url}" alt="${name}" /></a><div class="ccs-file-name">${name}</div></div>`;
+    }
+    if (type === 'video') {
+      return `<div class="ccs-attach"><video src="${url}" controls playsinline></video><div class="ccs-file-name"><a href="${url}" target="_blank" rel="noopener noreferrer">${name}</a></div></div>`;
+    }
+    return `<div class="ccs-attach"><a href="${url}" target="_blank" rel="noopener noreferrer">📎 ${name}</a></div>`;
+  }
+
+  function add(text, type, name, attachment) {
     const d = document.createElement('div');
     d.className = 'ccs-msg ' + (type === 'visitor' ? 'ccs-v' : 'ccs-a');
 
@@ -457,9 +494,19 @@
       prefix = name + ': ';
     }
 
-    d.innerHTML = linkifyEscapedText(prefix + text);
+    const bodyHtml = text ? linkifyEscapedText(prefix + text) : (prefix ? escapeHtml(prefix) : '');
+    d.innerHTML = bodyHtml + attachmentHtml(attachment || {});
     msgs.appendChild(d);
     scrollMsgsToBottom();
+  }
+
+  async function uploadAttachment(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch(baseUrl + '/api/upload', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || 'upload failed');
+    return j;
   }
 
   async function getConfig() {
@@ -569,7 +616,7 @@
     if (!list.length) {
       add(greeting, 'agent', '');
     } else {
-      list.forEach((m) => add(m.body, m.sender_type, m.sender_name));
+      list.forEach((m) => add(m.body, m.sender_type, m.sender_name, m));
     }
 
     messagesLoaded = true;
@@ -589,7 +636,7 @@
 
       socket.on('message', (m) => {
         if (m.sender_type === 'agent') {
-          add(m.body, 'agent', m.sender_name);
+          add(m.body, 'agent', m.sender_name, m);
         }
       });
 
@@ -646,18 +693,32 @@
 
   async function submit() {
     const body = input.value.trim();
-    if (!body) return;
+    const file = fileInput.files && fileInput.files[0];
+    if (!body && !file) return;
 
     input.value = '';
+    input.placeholder = '请输入您的问题...';
 
     await ensureConversation();
 
-    add(body, 'visitor', '');
+    let attachment = null;
+    if (file) {
+      try {
+        attachment = await uploadAttachment(file);
+      } catch (e) {
+        alert('上传失败：' + (e.message || '请稍后再试'));
+        return;
+      } finally {
+        fileInput.value = '';
+      }
+    }
+
+    add(body, 'visitor', '', attachment || {});
 
     await fetch(baseUrl + '/api/widget/conversations/' + encodeURIComponent(conversationId) + '/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ body })
+      body: JSON.stringify({ body, attachment })
     });
 
     setTimeout(() => {
@@ -665,6 +726,13 @@
       scrollMsgsToBottom();
     }, 50);
   }
+
+  fileBtn.onclick = () => fileInput.click();
+
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files && fileInput.files[0];
+    if (f) input.placeholder = '已選擇：' + f.name + '，可輸入文字後送出';
+  });
 
   send.onclick = submit;
 
