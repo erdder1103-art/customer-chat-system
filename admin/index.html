@@ -490,7 +490,37 @@ function updateSoundButton(){const b=$('soundBtn'); if(!b)return; b.textContent=
 
 function groupDisplayName(value){ const v=String(value||'').trim(); if(['廣告A','广告A','__adA__','官方-广告','-官方-广告'].includes(v)) return '官方-广告'; if(['廣告B','广告B','__adB__','华-广告','-华-广告'].includes(v)) return '华-广告'; return v || '未分類'; }
 function updateStatusUI(){ const status=$('supportStatus')?$('supportStatus').value:'online'; const txt=$('supportStatusText'); if(txt){ txt.textContent=status==='offline'?'離線':'在線'; txt.className=status==='offline'?'offline':'online'; } const box=$('supportStateBox'); if(box) box.classList.toggle('offline',status==='offline'); if($('setOnlineBtn')) $('setOnlineBtn').classList.toggle('active',status!=='offline'); if($('setOfflineBtn')) $('setOfflineBtn').classList.toggle('active',status==='offline'); }
-function setSupportStatus(status){ if(!$('supportStatus')) return; $('supportStatus').value=status==='offline'?'offline':'online'; updateStatusUI(); showToast(status==='offline'?'客服狀態已切換為離線，記得儲存設定':'客服狀態已切換為在線，記得儲存設定','success'); }
+async function setSupportStatus(status){
+  if(!$('supportStatus')) return;
+
+  const nextStatus = status === 'offline' ? 'offline' : 'online';
+  const oldStatus = $('supportStatus').value || 'online';
+
+  $('supportStatus').value = nextStatus;
+  updateStatusUI();
+  showToast(nextStatus === 'offline' ? '正在切換為離線...' : '正在切換為在線...', 'warn');
+
+  try {
+    const r = await api('/api/settings', {
+      method: 'PATCH',
+      body: JSON.stringify({ support_status: nextStatus })
+    });
+
+    const j = await r.json();
+    settings = j.settings || settings;
+
+    if (settings && settings.support_status && $('supportStatus')) {
+      $('supportStatus').value = settings.support_status;
+    }
+
+    updateStatusUI();
+    showToast(nextStatus === 'offline' ? '已切換並儲存：離線' : '已切換並儲存：在線', 'success');
+  } catch (e) {
+    $('supportStatus').value = oldStatus;
+    updateStatusUI();
+    showToast('客服狀態儲存失敗，請再試一次', 'error');
+  }
+}
 function updateTitlePreview(){ if($('widgetTitlePreview')) $('widgetTitlePreview').textContent=($('widgetTitle')&&$('widgetTitle').value)||'-'; }
 function openTitleModal(){ if($('titleModalInput')) $('titleModalInput').value=($('widgetTitle')&&$('widgetTitle').value)||''; openModal('titleModalBackdrop'); }
 function closeTitleModal(){ closeModal('titleModalBackdrop'); }
