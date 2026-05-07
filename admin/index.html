@@ -13,13 +13,25 @@
     .settings h3{margin:8px 0 12px}.settings label{display:block;font-size:13px;color:#ddd;margin:12px 0 6px}.settings textarea{min-height:72px;resize:vertical}.settings .hint{font-size:12px;color:#f4c542;line-height:1.4}.info{font-size:12px;color:#ddd;line-height:1.55;background:#191919;border:1px solid #333;border-radius:10px;padding:10px;margin-top:10px;word-break:break-all}.hidden{display:none!important}
     @media(max-width:1100px){.app{grid-template-columns:320px 1fr}.settings{display:none}.settings.show{display:block;position:fixed;right:0;top:0;bottom:0;width:345px;z-index:20}}
 
-    .sop-manager{display:grid;gap:8px;background:#191919;border:1px solid #333;border-radius:10px;padding:10px;margin-top:6px;max-height:360px;overflow:auto}
-    .sop-row{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;background:#222;border:1px solid #333;border-radius:8px;padding:7px}
+    .sop-open-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:6px}
+    .sop-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:999px;background:#111;color:#ffd966;font-size:12px;border:1px solid #735b22}
+    .modal-backdrop{position:fixed;inset:0;z-index:999990;background:rgba(0,0,0,.68);display:none;align-items:center;justify-content:center;padding:22px}
+    .modal-backdrop.show{display:flex}
+    .sop-modal{width:min(720px,calc(100vw - 28px));max-height:calc(100vh - 36px);background:#111;border:1px solid #735b22;border-radius:18px;box-shadow:0 18px 60px rgba(0,0,0,.65);display:flex;flex-direction:column;overflow:hidden}
+    .sop-modal-head{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid #333;background:#171717}
+    .sop-modal-title{font-weight:900;font-size:18px;color:#ffd966}
+    .sop-modal-body{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:260px minmax(0,1fr);gap:12px;padding:12px;overflow:hidden}
+    .sop-modal-list{min-height:0;overflow:auto;border:1px solid #333;border-radius:12px;background:#181818;padding:8px;display:grid;align-content:start;gap:8px}
+    .sop-modal-row{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center;background:#222;border:1px solid #333;border-radius:10px;padding:8px}
     .sop-title{font-size:13px;font-weight:900;color:#ffd45a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .sop-preview{font-size:12px;line-height:1.35;color:#bbb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
-    .sop-editor{display:grid;gap:6px;margin-top:4px;position:sticky;bottom:0;background:#191919;padding-top:6px;border-top:1px solid #333}
-    .sop-editor input{width:100%;background:#222;color:#fff;border:1px solid #3a3a3a;border-radius:8px;padding:9px}
-    .sop-editor textarea{min-height:70px!important;max-height:110px!important}
+    .sop-modal-row.active{border-color:#f4c542;background:#2b2414}
+    .sop-modal-editor{display:grid;gap:8px;align-content:start;min-width:0}
+    .sop-modal-editor input,.sop-modal-editor textarea{width:100%;background:#222;color:#fff;border:1px solid #3a3a3a;border-radius:10px;padding:10px;outline:none}
+    .sop-modal-editor textarea{min-height:210px!important;max-height:calc(100vh - 330px)!important;resize:vertical}
+    .sop-modal-editor input:focus,.sop-modal-editor textarea:focus{border-color:#f4c542;box-shadow:0 0 0 2px rgba(244,197,66,.12)}
+    .sop-modal-foot{flex:0 0 auto;display:flex;gap:8px;justify-content:flex-end;padding:12px;border-top:1px solid #333;background:#171717}
+    .sop-help{font-size:12px;color:#aaa;line-height:1.45}
+    @media(max-width:760px){.sop-modal-body{grid-template-columns:1fr}.sop-modal-list{max-height:220px}.sop-modal-editor textarea{min-height:160px!important}}
     .toast{position:fixed;right:20px;bottom:20px;z-index:999999;min-width:220px;max-width:360px;padding:13px 16px;border-radius:12px;background:#191919;border:1px solid #f4c542;color:#fff;box-shadow:0 12px 36px rgba(0,0,0,.45);font-size:14px;font-weight:700;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .18s ease,transform .18s ease}.toast.show{opacity:1;transform:translateY(0)}.toast.success{border-color:#2aa65a}.toast.warn{border-color:#f4c542}.toast.error{border-color:#e83d3d}
     .msg a{color:#2b6cff;text-decoration:underline;word-break:break-all}.msg.agent a{color:#003a91}.msg.visitor a{color:#79b8ff}
     html,body{height:100%;overflow:hidden}.app{height:100vh;max-height:100vh}.side,.main,.settings{height:100vh;max-height:100vh;min-height:0}.list,.msgs{min-height:0}.reply{flex:0 0 auto}.quick{flex:0 0 auto}.chat-head{flex:0 0 auto}#chatPanel{height:100%;max-height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
@@ -52,7 +64,7 @@
     <label>聊天窗口標題</label><input id="widgetTitle">
     <label>在線招呼語</label><textarea id="onlineGreeting"></textarea>
     <label>離線招呼語</label><textarea id="offlineGreeting"></textarea>
-    <label>SOP 快捷話術</label><textarea id="quickReplies" class="hidden"></textarea><div class="sop-manager"><div id="sopList"></div><div class="sop-editor"><input id="sopTitleInput" placeholder="話術主題，例如：會員帳號、活動說明、首存提醒"><textarea id="sopInput" placeholder="話術內容：點擊主題時，會自動帶入這段完整內容。"></textarea><button class="btn primary" id="addSopBtn" type="button">新增 SOP 話術</button></div></div>
+    <label>SOP 快捷話術</label><textarea id="quickReplies" class="hidden"></textarea><button class="btn primary sop-open-btn" id="openSopModalBtn" type="button">SOP 話術設定 <span class="sop-count" id="sopCount">0</span></button><div class="hint">下方聊天區只顯示話術主題；點主題會自動帶入完整話術。</div>
     <label>客服顯示名稱（一行一組：帳號=客戶看到的名稱）</label><textarea id="agentDisplayNames"></textarea>
     <div class="hint">例：<br>admin=客服小雅<br>admin1=F1專員<br>bbs01=VIP專員</div>
     <button class="btn primary" id="saveSettings" style="margin-top:10px">儲存客服設定</button>
@@ -60,6 +72,32 @@
   </aside>
 </div>
 <div id="toast" class="toast">已儲存</div>
+<div id="sopModalBackdrop" class="modal-backdrop">
+  <div class="sop-modal" role="dialog" aria-modal="true">
+    <div class="sop-modal-head">
+      <div>
+        <div class="sop-modal-title">SOP 話術設定</div>
+        <div class="sop-help">設定「主題 + 完整話術」。客服聊天快捷列只會顯示主題。</div>
+      </div>
+      <button class="btn" id="closeSopModalBtn" type="button">關閉</button>
+    </div>
+    <div class="sop-modal-body">
+      <div id="sopList" class="sop-modal-list"></div>
+      <div class="sop-modal-editor">
+        <label>話術主題</label>
+        <input id="sopTitleInput" placeholder="例如：開場白、會員帳號、活動說明">
+        <label>完整話術內容</label>
+        <textarea id="sopInput" placeholder="輸入完整話術。點擊聊天區快捷主題時，會自動帶入這段內容。"></textarea>
+        <button class="btn primary" id="addSopBtn" type="button">新增 SOP 話術</button>
+        <button class="btn" id="clearSopEditBtn" type="button">清空輸入</button>
+      </div>
+    </div>
+    <div class="sop-modal-foot">
+      <button class="btn" id="closeSopModalBtn2" type="button">完成</button>
+      <button class="btn primary" id="saveSettingsFromSopBtn" type="button">儲存客服設定</button>
+    </div>
+  </div>
+</div>
 <script src="/socket.io/socket.io.js"></script>
 <script>
 let me=null, settings=null, conversations=[], currentId='', currentBox='inbox', currentSourceGroup='', currentReadStatus='all', soundEnabled=localStorage.getItem('ccs_admin_sound_enabled')!=='0', audioCtx=null, lastBeepAt=0, quickReplyItems=[];
@@ -110,8 +148,12 @@ function actionsHtml(c){ if(c.folder==='trash') return `<button class="btn" oncl
 function infoHtml(c){ return `<b>來源資訊</b><br>來源分類：${esc(sourceGroupLabel(c))}<br>列表標籤：${esc(sourceShortLabel(c))}<br>落地頁：${esc(c.source_title||'-')}<br>活動：${esc(c.source_campaign||'-')}<br>網址：${esc(c.source_url||'-')}<hr><b>IP / 地區</b><br>IP：${esc(c.ip_address||'-')}<br>地區：${esc(regionLabel(c))}<br>ISP：${esc(c.ip_isp||'-')}<hr><b>設備資訊</b><br>裝置：${esc(c.device_model||'-')}<br>類型：${esc(c.device_type||'-')}<br>系統：${esc(c.device_os||'-')}<br>瀏覽器：${esc(c.browser||'-')}<br>螢幕：${esc(c.screen_size||'-')}<br>語言：${esc(c.language||'-')}<br>時區：${esc(c.timezone||'-')}<br>網路：${esc(networkLabel(c))}<br><br><b>User-Agent</b><br>${esc(c.user_agent||'-')}`; }
 function renderMessage(m){ const key=m.id?`id:${m.id}`:`${m.sender_type}|${m.sender_name}|${m.body}|${m.created_at}`; if(renderedIds.has(key)) return; renderedIds.add(key); const d=document.createElement('div'); d.className='msg '+(m.sender_type==='visitor'?'visitor':'agent'); d.innerHTML=`${m.sender_type==='agent'&&m.sender_name?esc(m.sender_name)+': ':''}${linkify(m.body)}<div class="msg-time">${fmt(m.created_at)}${m.sender_login?' ｜ 帳號：'+esc(m.sender_login):''}</div>`; $('msgs').appendChild(d); $('msgs').scrollTop=$('msgs').scrollHeight; }
 function renderQuick(){ const quicks=quickReplyItems.length?quickReplyItems:normalizeSopList(($('quickReplies').value||'').split(/\r?\n/)); $('quick').innerHTML=''; quicks.forEach(q=>{ const item=normalizeSopItem(q); if(!item)return; const b=document.createElement('button'); b.className='btn'; b.textContent=item.title; b.title=item.content; b.onclick=()=>{$('replyInput').value=item.content;$('replyInput').focus();}; $('quick').appendChild(b); }); }
-function renderSopEditor(){ const list=$('sopList'); if(!list)return; list.innerHTML=''; if(!quickReplyItems.length){ list.innerHTML='<div class="meta">尚未設定 SOP 話術</div>'; return;} quickReplyItems.forEach((raw,i)=>{ const q=normalizeSopItem(raw); if(!q)return; const row=document.createElement('div'); row.className='sop-row'; row.innerHTML='<div><div class="sop-title">'+esc(q.title)+'</div><div class="sop-preview">'+esc(q.content)+'</div></div><button class="btn" type="button">編輯</button><button class="btn danger" type="button">刪除</button>'; row.children[1].onclick=()=>{ $('sopTitleInput').value=q.title; $('sopInput').value=q.content; $('sopTitleInput').focus(); $('addSopBtn').textContent='更新這則 SOP'; $('addSopBtn').dataset.editIndex=String(i); }; row.children[2].onclick=()=>{ quickReplyItems.splice(i,1); syncSopHiddenField(); renderQuick(); renderSopEditor(); }; list.appendChild(row); });}
-function addOrUpdateSop(){ const title=$('sopTitleInput').value.trim(); const content=$('sopInput').value.trim(); if(!content){showToast('請先輸入 SOP 話術內容','warn'); return;} const item={title:title||content.slice(0,18),content}; const idx=$('addSopBtn').dataset.editIndex; if(idx!==undefined&&idx!==''){ quickReplyItems[Number(idx)]=item; $('addSopBtn').dataset.editIndex=''; $('addSopBtn').textContent='新增 SOP 話術'; } else quickReplyItems.push(item); $('sopTitleInput').value=''; $('sopInput').value=''; syncSopHiddenField(); renderQuick(); renderSopEditor(); }
+function updateSopCount(){ const el=$('sopCount'); if(el) el.textContent=String(quickReplyItems.length||0); }
+function openSopModal(){ const m=$('sopModalBackdrop'); if(m){ renderSopEditor(); m.classList.add('show'); setTimeout(()=>$('sopTitleInput')&&$('sopTitleInput').focus(),80); } }
+function closeSopModal(){ const m=$('sopModalBackdrop'); if(m) m.classList.remove('show'); }
+function clearSopEditor(){ if($('sopTitleInput')) $('sopTitleInput').value=''; if($('sopInput')) $('sopInput').value=''; if($('addSopBtn')){ $('addSopBtn').dataset.editIndex=''; $('addSopBtn').textContent='新增 SOP 話術'; } document.querySelectorAll('.sop-modal-row').forEach(x=>x.classList.remove('active')); }
+function renderSopEditor(){ const list=$('sopList'); updateSopCount(); if(!list)return; list.innerHTML=''; if(!quickReplyItems.length){ list.innerHTML='<div class="meta">尚未設定 SOP 話術，請在右側新增主題與內容。</div>'; return;} quickReplyItems.forEach((raw,i)=>{ const q=normalizeSopItem(raw); if(!q)return; const row=document.createElement('div'); row.className='sop-modal-row'; if($('addSopBtn') && $('addSopBtn').dataset.editIndex===String(i)) row.classList.add('active'); row.innerHTML='<div class="sop-title" title="'+esc(q.title)+'">'+esc(q.title)+'</div><button class="btn" type="button">編輯</button><button class="btn danger" type="button">刪除</button>'; row.children[1].onclick=()=>{ $('sopTitleInput').value=q.title; $('sopInput').value=q.content; $('sopTitleInput').focus(); $('addSopBtn').textContent='更新這則 SOP'; $('addSopBtn').dataset.editIndex=String(i); renderSopEditor(); }; row.children[2].onclick=()=>{ if(!confirm('確定刪除這則 SOP 話術？')) return; quickReplyItems.splice(i,1); syncSopHiddenField(); clearSopEditor(); renderQuick(); renderSopEditor(); }; list.appendChild(row); });}
+function addOrUpdateSop(){ const title=$('sopTitleInput').value.trim(); const content=$('sopInput').value.trim(); if(!content){showToast('請先輸入 SOP 話術內容','warn'); return;} const item={title:title||content.slice(0,18),content}; const idx=$('addSopBtn').dataset.editIndex; if(idx!==undefined&&idx!==''){ quickReplyItems[Number(idx)]=item; showToast('SOP 話術已更新','success'); } else { quickReplyItems.push(item); showToast('SOP 話術已新增，記得儲存客服設定','success'); } clearSopEditor(); syncSopHiddenField(); renderQuick(); renderSopEditor(); }
 async function sendReply(){ const body=$('replyInput').value.trim(); if(!body||!currentId)return; $('replyInput').value=''; const r=await api('/api/conversations/'+currentId+'/messages',{method:'POST',body:JSON.stringify({body})}); const m=await r.json(); renderMessage(m); await loadConversations(); }
 async function markRead(){ if(currentId){await api('/api/conversations/'+currentId+'/read',{method:'POST'}); await loadConversations();} }
 async function markUnread(){ if(currentId){await api('/api/conversations/'+currentId+'/unread',{method:'POST'}); await loadConversations();} }
@@ -120,7 +162,7 @@ async function trashConv(){ if(currentId&&confirm('確定移到垃圾桶？')){a
 async function restoreConv(){ if(currentId){await api('/api/conversations/'+currentId+'/restore',{method:'POST'}); await loadConversations(); openConversation(currentId);} }
 async function deleteConv(){ if(currentId&&confirm('永久刪除後無法恢復，確定？')){await api('/api/conversations/'+currentId,{method:'DELETE'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
 async function refreshAll(){ await loadConversations(); if(currentId) await openConversation(currentId); }
-function bind(){ document.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-box]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentBox=b.dataset.box; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); document.querySelectorAll('[data-source-group]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-source-group]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentSourceGroup=b.dataset.sourceGroup||''; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); document.querySelectorAll('[data-read-status]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-read-status]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentReadStatus=b.dataset.readStatus||'all'; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); ['search','statusFilter','onlineFilter'].forEach(id=>$(id).addEventListener('input',renderList)); $('saveSettings').onclick=saveSettings; $('sendBtn').onclick=sendReply; $('replyInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendReply();}); $('logoutBtn').onclick=async()=>{await api('/api/logout',{method:'POST'});location.href='/admin/login.html';}; $('soundBtn').onclick=toggleSound; if($('addSopBtn')) $('addSopBtn').onclick=addOrUpdateSop; document.addEventListener('click',()=>{if(soundEnabled) ensureAudioContext();},{once:true}); }
+function bind(){ document.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-box]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentBox=b.dataset.box; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); document.querySelectorAll('[data-source-group]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-source-group]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentSourceGroup=b.dataset.sourceGroup||''; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); document.querySelectorAll('[data-read-status]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-read-status]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentReadStatus=b.dataset.readStatus||'all'; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); ['search','statusFilter','onlineFilter'].forEach(id=>$(id).addEventListener('input',renderList)); $('saveSettings').onclick=saveSettings; $('sendBtn').onclick=sendReply; $('replyInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendReply();}); $('logoutBtn').onclick=async()=>{await api('/api/logout',{method:'POST'});location.href='/admin/login.html';}; $('soundBtn').onclick=toggleSound; if($('openSopModalBtn')) $('openSopModalBtn').onclick=openSopModal; if($('closeSopModalBtn')) $('closeSopModalBtn').onclick=closeSopModal; if($('closeSopModalBtn2')) $('closeSopModalBtn2').onclick=closeSopModal; if($('sopModalBackdrop')) $('sopModalBackdrop').onclick=e=>{ if(e.target===$('sopModalBackdrop')) closeSopModal(); }; if($('addSopBtn')) $('addSopBtn').onclick=addOrUpdateSop; if($('clearSopEditBtn')) $('clearSopEditBtn').onclick=clearSopEditor; if($('saveSettingsFromSopBtn')) $('saveSettingsFromSopBtn').onclick=async()=>{ await saveSettings(); closeSopModal(); }; document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSopModal(); }); document.addEventListener('click',()=>{if(soundEnabled) ensureAudioContext();},{once:true}); }
 socket.on('new_conversation', c=>{ conversations.unshift(c); renderList(); updateTitle(); beep(); });
 socket.on('conversation_updated', c=>{ const idx=conversations.findIndex(x=>x.id===c.id); const old=idx>=0?conversations[idx]:null; const sourceOk=!currentSourceGroup || (currentSourceGroup==='__uncategorized__' ? !(c.source_group||'') : c.source_group===currentSourceGroup); const readOk=currentReadStatus==='all' || (currentReadStatus==='unread' ? Number(c.unread_count||0)>0 : Number(c.unread_count||0)===0); const boxOk=(c.folder===currentBox || currentBox==='all'); if(boxOk && sourceOk && readOk){ if(idx>=0) conversations[idx]=c; else conversations.unshift(c); } else if(idx>=0) conversations.splice(idx,1); renderList(); updateTitle(); if(old && Number(c.unread_count||0)>Number(old.unread_count||0) && c.last_sender_type==='visitor') beep(); if(currentId===c.id){ $('convSub').textContent=`ID: ${c.id} ｜ 建立：${fmt(c.created_at)} ｜ 最後上線：${fmt(c.visitor_last_seen)}`; $('convInfo').innerHTML=infoHtml(c); } });
 socket.on('conversation_deleted', ({id})=>{ conversations=conversations.filter(c=>c.id!==id); if(currentId===id){currentId='';$('chatPanel').classList.add('hidden');$('chatEmpty').classList.remove('hidden');} renderList(); updateTitle(); });
