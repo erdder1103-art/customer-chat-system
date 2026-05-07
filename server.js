@@ -348,19 +348,19 @@ function normalizeAttachment(input) {
 function groupAliases(value) {
   const v = String(value || '').trim();
   if (!v) return [];
-  if (v === '__adA__' || v === '廣告A' || v === '广告A' || v === '官方-广告' || v === '-官方-广告') {
-    return ['廣告A', '广告A', '官方-广告', '-官方-广告'];
+  if (v === '__adA__' || v === '廣告A' || v === '广告A' || v === '官方-广告' || v === '-官方-广告' || v === '官方-廣告' || v === '-官方-廣告') {
+    return ['廣告A', '广告A', '官方-广告', '-官方-广告', '官方-廣告', '-官方-廣告', '__adA__'];
   }
-  if (v === '__adB__' || v === '廣告B' || v === '广告B' || v === '华-广告' || v === '-华-广告') {
-    return ['廣告B', '广告B', '华-广告', '-华-广告'];
+  if (v === '__adB__' || v === '廣告B' || v === '广告B' || v === '华-广告' || v === '-华-广告' || v === '華-廣告' || v === '-華-廣告' || v === '华-廣告' || v === '-华-廣告') {
+    return ['廣告B', '广告B', '华-广告', '-华-广告', '華-廣告', '-華-廣告', '华-廣告', '-华-廣告', '__adB__'];
   }
   return [v];
 }
 
 function normalizeGroupLabel(value) {
   const v = String(value || '').trim();
-  if (['廣告A','广告A','官方-广告','-官方-广告','__adA__'].includes(v)) return '官方-广告';
-  if (['廣告B','广告B','华-广告','-华-广告','__adB__'].includes(v)) return '华-广告';
+  if (['廣告A','广告A','官方-广告','-官方-广告','官方-廣告','-官方-廣告','__adA__'].includes(v)) return '官方-广告';
+  if (['廣告B','广告B','华-广告','-华-广告','華-廣告','-華-廣告','华-廣告','-华-廣告','__adB__'].includes(v)) return '华-广告';
   return v || '未分類';
 }
 
@@ -533,24 +533,49 @@ function normalizeGreetingRules(value) {
   }).filter(Boolean);
 }
 
-function greetingFor(status, sourceGroup) {
+function greetingsFor(status, sourceGroup) {
   const group = String(sourceGroup || '').trim();
   const rules = normalizeGreetingRules(setting('greeting_rules'));
   const isOffline = status === 'offline';
-  const aliases = groupAliases(group);
-  const exact = rules.find(r => aliases.includes(String(r.group || '').trim()) && (isOffline ? r.offline : r.online));
-  if (exact) return exact.content;
-  const fallback = rules.find(r => !r.group && (isOffline ? r.offline : r.online));
-  if (fallback) return fallback.content;
-  return isOffline
+  const aliases = groupAliases(group).map(x => normalizeGroupLabel(x));
+
+  const typeOk = r => isOffline ? r.offline : r.online;
+  const ruleGroupLabel = r => normalizeGroupLabel(String(r.group || '').trim());
+
+  // 先找與來源相符的招呼語。這裡同時支援：廣告B / 华-广告 / 華-廣告 / __adB__ 等別名。
+  const sourceMatches = rules.filter(r => {
+    const rg = String(r.group || '').trim();
+    if (!rg || !typeOk(r)) return false;
+    return aliases.includes(ruleGroupLabel(r)) || groupAliases(rg).map(x => normalizeGroupLabel(x)).includes(normalizeGroupLabel(group));
+  });
+
+  // 如果該來源沒有專屬招呼語，才使用「全部」招呼語。
+  const fallbackMatches = rules.filter(r => !String(r.group || '').trim() && typeOk(r));
+  const picked = sourceMatches.length ? sourceMatches : fallbackMatches;
+
+  if (picked.length) {
+    // 保留使用者排序，並去掉完全重複的內容。
+    const seen = new Set();
+    return picked.map(r => String(r.content || '').trim()).filter(Boolean).filter(x => {
+      if (seen.has(x)) return false;
+      seen.add(x);
+      return true;
+    });
+  }
+
+  return [isOffline
     ? (setting('offline_greeting') || '目前非工作时间,请留下联系方式我们会与你联系协助你领取体验金。')
-    : (setting('online_greeting') || '你好,领取10U体验金吗？');
+    : (setting('online_greeting') || '你好,领取10U体验金吗？')].filter(Boolean);
+}
+
+function greetingFor(status, sourceGroup) {
+  return greetingsFor(status, sourceGroup)[0] || '';
 }
 
 function offlineReplyKeyFor(sourceGroup) {
   return crypto
     .createHash('sha1')
-    .update(`${setting('support_status')}|${sourceGroup || ''}|${greetingFor('offline', sourceGroup)}`)
+    .update(`${setting('support_status')}|${sourceGroup || ''}|${greetingsFor('offline', sourceGroup).join('\n---\n')}`)
     .digest('hex');
 }
 
@@ -611,9 +636,8 @@ function insertInitialGreeting(conversationId) {
   const status = setting('support_status') || 'online';
   const convo = convoById(conversationId);
   const group = convo ? (convo.source_group || '') : '';
-  const body = greetingFor(status, group);
-
-  const msg = insertSystemMessage(conversationId, body);
+  const bodies = greetingsFor(status, group);
+  const messages = bodies.map(body => insertSystemMessage(conversationId, body)).filter(Boolean);
 
   if (status === 'offline') {
     db.prepare(`
@@ -623,22 +647,22 @@ function insertInitialGreeting(conversationId) {
     `).run(offlineReplyKeyFor(group), conversationId);
   }
 
-  return msg;
+  return messages;
 }
 
 function maybeInsertOfflineAutoReply(conversationId) {
-  if ((setting('support_status') || 'online') !== 'offline') return null;
+  if ((setting('support_status') || 'online') !== 'offline') return [];
 
   const convo = convoById(conversationId);
 
-  if (!convo) return null;
+  if (!convo) return [];
 
   const group = convo.source_group || '';
   const key = offlineReplyKeyFor(group);
 
-  if (convo.offline_auto_reply_key === key) return null;
+  if (convo.offline_auto_reply_key === key) return [];
 
-  const msg = insertSystemMessage(conversationId, greetingFor('offline', group));
+  const messages = greetingsFor('offline', group).map(body => insertSystemMessage(conversationId, body)).filter(Boolean);
 
   db.prepare(`
     UPDATE conversations
@@ -646,7 +670,7 @@ function maybeInsertOfflineAutoReply(conversationId) {
     WHERE id=?
   `).run(key, nowIso(), conversationId);
 
-  return msg;
+  return messages;
 }
 
 function parseAgentDisplayNames() {
@@ -1040,6 +1064,63 @@ app.post('/api/conversations/:id/unread', requireLogin, (req, res) => {
 });
 
 
+
+app.post('/api/conversations/batch', requireLogin, (req, res) => {
+  const ids = Array.isArray(req.body.ids)
+    ? req.body.ids.map(x => clean(x, 120)).filter(Boolean)
+    : [];
+  const action = String(req.body.action || '').trim();
+
+  if (!ids.length) {
+    return res.status(400).json({ ok: false, error: '沒有選擇對話' });
+  }
+
+  const now = nowIso();
+
+  try {
+    const tx = db.transaction((list) => {
+      if (action === 'archive') {
+        const stmt = db.prepare("UPDATE conversations SET folder='archive', archived_at=?, updated_at=? WHERE id=?");
+        list.forEach(id => stmt.run(now, now, id));
+      } else if (action === 'trash') {
+        const stmt = db.prepare("UPDATE conversations SET folder='trash', deleted_at=?, updated_at=? WHERE id=?");
+        list.forEach(id => stmt.run(now, now, id));
+      } else if (action === 'restore') {
+        const stmt = db.prepare("UPDATE conversations SET folder='inbox', archived_at='', deleted_at='', updated_at=? WHERE id=?");
+        list.forEach(id => stmt.run(now, id));
+      } else if (action === 'read') {
+        const stmt = db.prepare('UPDATE conversations SET unread_count=0, updated_at=? WHERE id=?');
+        list.forEach(id => stmt.run(now, id));
+      } else if (action === 'unread') {
+        const stmt = db.prepare('UPDATE conversations SET unread_count=CASE WHEN unread_count > 0 THEN unread_count ELSE 1 END, updated_at=? WHERE id=?');
+        list.forEach(id => stmt.run(now, id));
+      } else if (action === 'delete') {
+        const delMsg = db.prepare('DELETE FROM messages WHERE conversation_id=?');
+        const delConv = db.prepare('DELETE FROM conversations WHERE id=?');
+        list.forEach(id => {
+          delMsg.run(id);
+          delConv.run(id);
+        });
+      } else {
+        throw new Error('未知操作');
+      }
+    });
+
+    tx(ids);
+
+    if (action === 'delete') {
+      ids.forEach(id => io.emit('conversation_deleted', { id }));
+    } else {
+      ids.forEach(id => emitConversation(id));
+    }
+
+    res.json({ ok: true, count: ids.length });
+  } catch (e) {
+    console.error('Batch operation failed:', e);
+    res.status(500).json({ ok: false, error: e && e.message ? e.message : '批量操作失敗' });
+  }
+});
+
 app.post('/api/conversations/:id/push-test', requireLogin, async (req, res) => {
   const convo = convoById(req.params.id);
 
@@ -1174,12 +1255,12 @@ app.post('/api/widget/conversations', (req, res) => {
     nowIso()
   );
 
-  const greetingMsg = insertInitialGreeting(id);
+  const greetingMsgs = insertInitialGreeting(id);
 
   io.emit('new_conversation', convoListRow(id));
 
-  if (greetingMsg) {
-    io.to(id).emit('message', greetingMsg);
+  if (Array.isArray(greetingMsgs)) {
+    greetingMsgs.forEach(m => io.to(id).emit('message', m));
   }
 
   res.json({ id });
@@ -1359,10 +1440,10 @@ app.post('/api/widget/conversations/:id/messages', (req, res) => {
 
   io.to(req.params.id).emit('message', msg);
 
-  const autoReply = maybeInsertOfflineAutoReply(req.params.id);
+  const autoReplies = maybeInsertOfflineAutoReply(req.params.id);
 
-  if (autoReply) {
-    io.to(req.params.id).emit('message', autoReply);
+  if (Array.isArray(autoReplies)) {
+    autoReplies.forEach(m => io.to(req.params.id).emit('message', m));
   }
 
   emitConversation(req.params.id);
