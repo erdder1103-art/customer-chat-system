@@ -432,29 +432,141 @@
   .batch-toolbar{padding:10px!important;gap:8px!important;}
   .batch-actions .btn{height:38px!important;font-size:13px!important;}
 }
+
+
+/* ===== V13.2 workspace layout polish ===== */
+body{overflow:hidden!important;background:#0d0d0d!important}
+.app#workspaceApp{display:grid!important;grid-template-columns:74px 360px minmax(0,1fr)!important;height:100vh!important;max-height:100vh!important;overflow:hidden!important}
+.nav-rail{background:linear-gradient(180deg,#131313,#0f0f0f)!important;border-right:1px solid #2b2b2b!important;padding:12px 10px!important;display:flex!important;flex-direction:column!important;gap:14px!important;min-height:0!important;overflow:hidden!important}
+.rail-head{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:4px 2px 6px!important}
+.rail-title{font-size:12px!important;color:#bfbfbf!important;font-weight:800!important;letter-spacing:1px!important}
+.rail-toggle,.rail-mini-toggle{width:42px!important;height:42px!important;border-radius:14px!important;border:1px solid rgba(244,197,66,.28)!important;background:#1b1b1b!important;color:#ffd45a!important;font-size:18px!important;font-weight:1000!important;cursor:pointer!important}
+.rail-mini-toggle{display:none!important}
+.rail-section{display:grid!important;gap:8px!important}
+.rail-section-bottom{margin-top:auto!important}
+.rail-label{font-size:11px!important;color:#888!important;letter-spacing:.8px!important;padding:0 4px!important;font-weight:800!important}
+.nav-rail .source-tabs,.nav-rail .tabs,.nav-rail .rail-stack{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;padding:0!important;border:0!important;background:transparent!important}
+.nav-rail .btn{width:100%!important;min-width:0!important;height:44px!important;border-radius:14px!important;padding:0 10px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.rail-settings-btn{margin-top:4px!important}
+.side{background:#111!important;display:flex!important;flex-direction:column!important;min-width:0!important;position:relative!important;overflow:hidden!important}
+.side-top{padding:14px!important;display:flex!important;align-items:flex-start!important;justify-content:space-between!important;gap:10px!important;border-bottom:1px solid #2c2c2c!important;background:#151515!important}
+.side-top-left{min-width:0!important}
+.side-top h2{margin:0!important;font-size:16px!important;display:flex!important;align-items:center!important;gap:8px!important}
+.side-subtitle{font-size:12px!important;color:#989898!important;margin-top:5px!important}
+.side-top-actions{display:flex!important;align-items:center!important;gap:8px!important;flex:0 0 auto!important}
+.sound-pill{background:linear-gradient(180deg,#154d2e,#0f3a23)!important;border-color:#2a9d59!important;color:#ecfff3!important;border-radius:999px!important;padding:0 16px!important;height:42px!important;box-shadow:0 0 0 2px rgba(42,157,89,.13)!important}
+.filters{padding:12px!important;gap:10px!important;overflow-x:hidden!important}
+.list{padding-bottom:120px!important;overflow:auto!important;overflow-x:hidden!important}
+.item{padding:12px 14px!important}
+.item-title{gap:10px!important}
+.item .snippet{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.batch-toolbar{left:12px!important;right:12px!important;bottom:12px!important;overflow:hidden!important}
+.batch-actions{grid-template-columns:1fr 1fr!important}
+.batch-actions .btn{white-space:normal!important;overflow:visible!important;text-overflow:clip!important;line-height:1.15!important}
+.main{min-width:0!important;background:#0c0c0c!important}
+.main-shell{height:100%!important;display:flex!important;flex-direction:column!important;min-width:0!important}
+.main-toolbar{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;padding:12px 16px!important;border-bottom:1px solid #252525!important;background:#121212!important}
+.main-toolbar-left{display:flex!important;align-items:center!important;gap:10px!important;min-width:0!important}
+.main-toolbar-title{font-size:14px!important;color:#ffd966!important;font-weight:900!important;letter-spacing:.4px!important}
+#chatEmpty{height:auto!important;flex:1!important}
+#chatPanel{flex:1!important;height:auto!important;max-height:none!important}
+.chat-head{padding:14px 16px!important;background:#101010!important}
+.msgs{padding:20px!important}
+.settings{position:fixed!important;top:0!important;right:0!important;bottom:0!important;width:380px!important;max-width:calc(100vw - 24px)!important;z-index:99990!important;transform:translateX(104%)!important;transition:transform .22s ease!important;display:block!important;border-left:1px solid rgba(244,197,66,.2)!important;box-shadow:-18px 0 45px rgba(0,0,0,.45)!important}
+.settings.show{transform:translateX(0)!important}
+.settings-header{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:10px!important;margin-bottom:10px!important;position:sticky!important;top:0!important;z-index:5!important;background:#111!important;padding-bottom:6px!important}
+.settings-header h3{margin:0!important}
+.app.settings-open::after{content:'';position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:99980}
+.app.rail-collapsed{grid-template-columns:20px 360px minmax(0,1fr)!important}
+.app.rail-collapsed .nav-rail{padding:0!important;border-right:0!important}
+.app.rail-collapsed .nav-rail > *:not(.rail-head){opacity:0!important;pointer-events:none!important}
+.app.rail-collapsed .rail-head{justify-content:center!important;padding-top:12px!important}
+.app.rail-collapsed .rail-title{display:none!important}
+.app.rail-collapsed .rail-toggle{position:relative!important;left:0!important}
+@media(max-width:1180px){.app#workspaceApp{grid-template-columns:74px 320px minmax(0,1fr)!important}.settings{width:360px!important}}
+@media(max-width:980px){.app#workspaceApp{grid-template-columns:1fr!important}.nav-rail{position:fixed!important;top:0!important;left:0!important;bottom:0!important;width:250px!important;z-index:99996!important;transform:translateX(-104%)!important;transition:transform .22s ease!important}.app.rail-open-mobile .nav-rail{transform:translateX(0)!important}.side{display:none!important}.main{grid-column:1!important}.rail-mini-toggle{display:inline-flex!important;align-items:center!important;justify-content:center!important}.main-toolbar{padding-left:12px!important}.app.rail-open-mobile::after{content:'';position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99995}.settings{width:min(390px,calc(100vw - 18px))!important}}
+
 </style>
 </head>
 <body>
-<div class="app">
-  <aside class="side">
-    <div class="top"><h2>對話列表 <span id="totalUnread" class="unread hidden">0</span></h2><div><button class="btn" id="soundBtn">啟用提示音</button><button class="btn primary" id="logoutBtn">登出</button></div></div>
-    <div class="source-tabs"><button class="btn active" data-source-group="">全部聊天</button><button class="btn" data-source-group="__adA__">官方-广告</button><button class="btn" data-source-group="__adB__">华-广告</button><button class="btn" data-source-group="__uncategorized__">未分類</button></div>
-    <div class="tabs"><button class="btn active" data-box="inbox">進行中</button><button class="btn" data-box="archive">已派發</button><button class="btn" data-box="trash">垃圾桶</button></div>
-    <div id="batchToolbar" class="batch-toolbar hidden"><div class="batch-count">已選 <b id="selectedCount">0</b> 筆</div><div class="batch-actions"><button class="btn" type="button" onclick="batchMarkRead()">標已讀</button><button class="btn" type="button" onclick="batchMarkUnread()">標未讀</button><button class="btn warn" type="button" onclick="batchArchive()">已派發</button><button class="btn danger" type="button" onclick="batchTrash()">刪除</button><button class="btn batch-cancel" type="button" onclick="clearSelection()">取消選取</button></div></div>
-    <div class="filters"><input id="search" placeholder="搜尋姓名 / 來源 / 活動 / 訊息"><div class="filters-row"><select id="statusFilter"><option value="">全部狀態</option><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select><select id="onlineFilter"><option value="">全部在線</option><option value="1">在線</option><option value="0">離線</option></select></div><div><div class="read-filter-label">讀取狀態</div><div class="read-tabs"><button class="btn active" data-read-status="all">全部</button><button class="btn" data-read-status="unread">未讀</button><button class="btn" data-read-status="read">已讀</button></div></div><div><div class="read-filter-label">未回覆篩選</div><div class="unreplied-mini"><label class="unreplied-chip"><input id="unrepliedOnlyFilter" type="checkbox">只看未回覆</label><input id="unrepliedMinutesFilter" type="number" min="0" max="1440" value="10" title="超過幾分鐘"></div></div></div>
-    <div id="list" class="list"></div>
+<div class="app" id="workspaceApp">
+  <aside class="nav-rail" id="navRail">
+    <div class="rail-head">
+      <button class="rail-toggle" id="toggleRailBtn" type="button" title="收合功能列">☰</button>
+      <div class="rail-title">功能列</div>
+    </div>
+    <div class="rail-section">
+      <div class="rail-label">來源</div>
+      <div class="rail-stack source-tabs">
+        <button class="btn active" data-source-group="">全部聊天</button>
+        <button class="btn" data-source-group="__adA__">官方-广告</button>
+        <button class="btn" data-source-group="__adB__">华-广告</button>
+        <button class="btn" data-source-group="__uncategorized__">未分類</button>
+      </div>
+    </div>
+    <div class="rail-section">
+      <div class="rail-label">分類</div>
+      <div class="rail-stack tabs">
+        <button class="btn active" data-box="inbox">進行中</button>
+        <button class="btn" data-box="archive">已派發</button>
+        <button class="btn" data-box="trash">垃圾桶</button>
+      </div>
+    </div>
+    <div class="rail-section rail-section-bottom">
+      <button class="btn primary rail-settings-btn js-open-settings" type="button">客服設定</button>
+    </div>
   </aside>
+
+  <aside class="side">
+    <div class="top side-top">
+      <div class="side-top-left">
+        <h2>對話列表 <span id="totalUnread" class="unread hidden">0</span></h2>
+        <div class="side-subtitle">清楚查看名單、來源與未讀訊息</div>
+      </div>
+      <div class="side-top-actions">
+        <button class="btn sound-pill" id="soundBtn">提示音：開</button>
+        <button class="btn primary" id="logoutBtn">登出</button>
+      </div>
+    </div>
+    <div class="filters">
+      <input id="search" placeholder="搜尋姓名 / 來源 / 活動 / 訊息">
+      <div class="filters-row">
+        <select id="statusFilter"><option value="">全部狀態</option><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select>
+        <select id="onlineFilter"><option value="">全部在線</option><option value="1">在線</option><option value="0">離線</option></select>
+      </div>
+      <div>
+        <div class="read-filter-label">讀取狀態</div>
+        <div class="read-tabs"><button class="btn active" data-read-status="all">全部</button><button class="btn" data-read-status="unread">未讀</button><button class="btn" data-read-status="read">已讀</button></div>
+      </div>
+      <div>
+        <div class="read-filter-label">未回覆篩選</div>
+        <div class="unreplied-mini"><label class="unreplied-chip"><input id="unrepliedOnlyFilter" type="checkbox">只看未回覆</label><input id="unrepliedMinutesFilter" type="number" min="0" max="1440" value="10" title="超過幾分鐘"></div>
+      </div>
+    </div>
+    <div id="list" class="list"></div>
+    <div id="batchToolbar" class="batch-toolbar hidden"><div class="batch-count">已選 <b id="selectedCount">0</b> 筆</div><div class="batch-actions"><button class="btn" type="button" onclick="batchMarkRead()">標已讀</button><button class="btn" type="button" onclick="batchMarkUnread()">標未讀</button><button class="btn warn" type="button" onclick="batchArchive()">已派發</button><button class="btn danger" type="button" onclick="batchTrash()">刪除</button><button class="btn batch-cancel" type="button" onclick="clearSelection()">取消選取</button></div></div>
+  </aside>
+
   <main class="main">
-    <div id="chatEmpty" class="empty">請選擇一個對話</div>
-    <div id="chatPanel" class="main hidden">
-      <div class="chat-head"><div><div class="chat-title" id="convTitle">-</div><div class="chat-sub" id="convSub">-</div></div><div class="actions" id="convActions"></div></div>
-      <div id="msgs" class="msgs"></div>
-      <div id="quick" class="quick"></div>
-      <div class="reply-attachment-preview" id="replyAttachmentPreview"></div><div class="reply"><input id="replyFileInput" type="file" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip" style="display:none"><button class="btn reply-file-btn" id="replyFileBtn" type="button">＋附件</button><input id="replyInput" placeholder="輸入回覆內容..."><button class="btn primary" id="sendBtn">送出</button></div>
+    <div class="main-shell">
+      <div class="main-toolbar">
+        <div class="main-toolbar-left">
+          <button class="btn rail-mini-toggle" id="toggleRailBtn2" type="button" title="收合功能列">☰</button>
+          <div class="main-toolbar-title">聊天視窗</div>
+        </div>
+        <button class="btn js-open-settings" type="button">打開設定</button>
+      </div>
+      <div id="chatEmpty" class="empty">請選擇一個對話</div>
+      <div id="chatPanel" class="main hidden">
+        <div class="chat-head"><div><div class="chat-title" id="convTitle">-</div><div class="chat-sub" id="convSub">-</div></div><div class="actions" id="convActions"></div></div>
+        <div id="msgs" class="msgs"></div>
+        <div id="quick" class="quick"></div>
+        <div class="reply-attachment-preview" id="replyAttachmentPreview"></div><div class="reply"><input id="replyFileInput" type="file" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip" style="display:none"><button class="btn reply-file-btn" id="replyFileBtn" type="button">＋附件</button><input id="replyInput" placeholder="輸入回覆內容..."><button class="btn primary" id="sendBtn">送出</button></div>
+      </div>
     </div>
   </main>
   <aside class="settings" id="settingsPanel">
-    <h3>客服狀態 / 設定</h3>
+    <div class="settings-header"><h3>客服狀態 / 設定</h3><button class="btn" id="closeSettingsPanelBtn" type="button">關閉</button></div>
     <select id="supportStatus" class="settings-hidden"><option value="online">在線</option><option value="offline">離線</option></select>
     <input id="widgetTitle" class="settings-hidden">
     <div class="support-card">
@@ -958,6 +1070,23 @@ bind = function(){
 window.openOpsModal=openOpsModal; window.openLimitModal=openLimitModal; window.loadBroadcastHistory=loadBroadcastHistory;
 
 init();
+
+/* ===== V13.2 rail + settings drawer ===== */
+function setupWorkspaceLayout(){
+  const app=$('workspaceApp');
+  const settingsPanel=$('settingsPanel');
+  const toggleDesktop=()=>{ if(!app) return; app.classList.toggle('rail-collapsed'); localStorage.setItem('chat_rail_collapsed', app.classList.contains('rail-collapsed') ? '1' : '0'); };
+  const toggleMobile=()=>{ if(!app) return; app.classList.toggle('rail-open-mobile'); };
+  const toggleRail=()=>{ if(window.innerWidth<=980) toggleMobile(); else toggleDesktop(); };
+  const saved=localStorage.getItem('chat_rail_collapsed'); if(app && saved==='1' && window.innerWidth>980){ app.classList.add('rail-collapsed'); }
+  ['toggleRailBtn','toggleRailBtn2'].forEach(id=>{ if($(id)) $(id).onclick=toggleRail; });
+  document.querySelectorAll('.js-open-settings').forEach(btn=>btn.onclick=()=>{ if(app) app.classList.add('settings-open'); if(settingsPanel) settingsPanel.classList.add('show'); if(app && window.innerWidth<=980) app.classList.remove('rail-open-mobile'); });
+  if($('closeSettingsPanelBtn')) $('closeSettingsPanelBtn').onclick=()=>{ if(app) app.classList.remove('settings-open'); if(settingsPanel) settingsPanel.classList.remove('show'); };
+  if(app) app.addEventListener('click',e=>{ if(e.target===app){ app.classList.remove('settings-open','rail-open-mobile'); if(settingsPanel) settingsPanel.classList.remove('show'); } });
+  window.addEventListener('resize',()=>{ if(!app) return; if(window.innerWidth>980) app.classList.remove('rail-open-mobile'); });
+}
+setupWorkspaceLayout();
+
 </script>
 </body>
 </html>
