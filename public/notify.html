@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>開啟客服通知</title>
+  <style>
+    *{box-sizing:border-box}
+    html,body{margin:0;min-height:100%;background:#080808;color:#fff;font-family:Arial,"Noto Sans TC","Microsoft JhengHei",sans-serif}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(circle at top,rgba(244,197,66,.18),transparent 38%),linear-gradient(180deg,#111,#050505)}
+    .card{width:100%;max-width:420px;border:1px solid rgba(244,197,66,.45);border-radius:22px;background:#151515;box-shadow:0 20px 60px rgba(0,0,0,.55);overflow:hidden}
+    .head{background:linear-gradient(135deg,#f4c542,#b98408);color:#111;padding:22px;font-weight:1000;font-size:22px}
+    .body{padding:22px;display:grid;gap:14px}.body p{margin:0;color:#ddd;line-height:1.6;font-size:15px}.status{padding:12px;border-radius:12px;background:#222;border:1px solid #333;color:#ffd45a;line-height:1.5}.btn{height:48px;border:0;border-radius:12px;background:#f4c542;color:#111;font-weight:1000;font-size:16px;cursor:pointer}.btn.secondary{background:#2a2a2a;color:#fff;border:1px solid #444}.small{font-size:12px;color:#999;line-height:1.5}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="head">開啟客服通知</div>
+    <div class="body">
+      <p>開啟後，就算您離開網頁，客服回覆時也可以收到通知提醒。</p>
+      <div id="status" class="status">準備開啟通知...</div>
+      <button id="enableBtn" class="btn" type="button">允許通知</button>
+      <button id="backBtn" class="btn secondary" type="button">返回聊天室</button>
+      <div class="small">若您使用 iPhone，部分瀏覽器可能需要將網站加入主畫面後才支援推播通知。</div>
+    </div>
+  </div>
+<script>
+(function(){
+  const params = new URLSearchParams(location.search);
+  const cid = params.get('cid') || '';
+  const returnUrl = params.get('return') || '';
+  const statusEl = document.getElementById('status');
+  const enableBtn = document.getElementById('enableBtn');
+  const backBtn = document.getElementById('backBtn');
+
+  function setStatus(text){ statusEl.textContent = text; }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+
+  async function reportStatus(status) {
+    if (!cid) return;
+    try {
+      await fetch('/api/widget/conversations/' + encodeURIComponent(cid) + '/push-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+    } catch(e) {}
+  }
+
+  function notifyOpener(status) {
+    try {
+      if (window.opener) window.opener.postMessage({ type: 'ccs_push_status', status }, '*');
+    } catch(e) {}
+  }
+
+  async function enablePush() {
+    if (!cid) {
+      setStatus('缺少對話資料，請回到聊天室重新開啟通知。');
+      return;
+    }
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      setStatus('此瀏覽器不支援網頁推播通知，請留下聯絡方式。');
+      await reportStatus('unsupported');
+      notifyOpener('unsupported');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+
+    if (permission !== 'granted') {
+      setStatus('您尚未允許通知，之後可到瀏覽器網站設定重新開啟。');
+      await reportStatus('denied');
+      notifyOpener('denied');
+      return;
+    }
+
+    setStatus('正在建立通知訂閱...');
+
+    const keyRes = await fetch('/api/push/public-key?v=' + Date.now(), { cache: 'no-store' });
+    const keyJson = await keyRes.json();
+
+    if (!keyJson.publicKey) throw new Error('missing public key');
+
+    const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    await navigator.serviceWorker.ready;
+
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(keyJson.publicKey)
+      });
+    }
+
+    const saveRes = await fetch('/api/widget/conversations/' + encodeURIComponent(cid) + '/push-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub })
+    });
+    const saveJson = await saveRes.json();
+
+    if (!saveRes.ok || !saveJson.ok) throw new Error(saveJson.error || 'save subscription failed');
+
+    setStatus('通知已開啟，離線也能收到客服回覆。');
+    notifyOpener('enabled');
+    enableBtn.textContent = '已開啟';
+    enableBtn.disabled = true;
+  }
+
+  enableBtn.addEventListener('click', function(){
+    enablePush().catch(async function(e){
+      setStatus('開啟通知失敗：' + (e.message || '請稍後再試'));
+      await reportStatus('failed');
+      notifyOpener('failed');
+    });
+  });
+
+  backBtn.addEventListener('click', function(){
+    if (returnUrl) {
+      location.href = returnUrl.indexOf('ccs_open=1') >= 0 ? returnUrl : (returnUrl + (returnUrl.indexOf('?') >= 0 ? '&' : '?') + 'ccs_open=1');
+    } else {
+      window.close();
+    }
+  });
+
+  setStatus('請點「允許通知」，再按瀏覽器提示的允許。');
+})();
+</script>
+</body>
+</html>

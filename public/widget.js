@@ -22,6 +22,11 @@
       300
   );
 
+  const urlParamsForChat = new URLSearchParams(location.search);
+  const shouldOpenFromNotification =
+    urlParamsForChat.get('ccs_open') === '1' ||
+    location.hash === '#customer-chat';
+
   const pageMeta = {
     source_site: scriptEl.dataset.site || '',
     source_title: scriptEl.dataset.title || document.title || '',
@@ -274,6 +279,40 @@
     color:#bbb;
   }
 
+  #ccs-push-box{
+    flex:0 0 auto;
+    display:none;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:9px 12px;
+    background:#101010;
+    border-bottom:1px solid #333;
+    color:#ddd;
+    font-size:12px;
+  }
+
+  #ccs-push-box.show{
+    display:flex;
+  }
+
+  #ccs-push-btn{
+    border:0;
+    border-radius:999px;
+    background:#f4c542;
+    color:#111;
+    padding:6px 10px;
+    font-size:12px;
+    font-weight:800;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+
+  #ccs-push-btn.done{
+    background:#145c36;
+    color:#39ff88;
+  }
+
   #ccs-msgs{
     flex:1 1 auto;
     min-height:0;
@@ -424,6 +463,11 @@
 
       <div id="ccs-visitor">訪客：${escapeHtml(visitorName)}</div>
 
+      <div id="ccs-push-box">
+        <span id="ccs-push-text">離線也想收到客服回覆通知？</span>
+        <button id="ccs-push-btn" type="button">開啟通知</button>
+      </div>
+
       <div id="ccs-msgs"></div>
 
       <div id="ccs-file-preview"></div>
@@ -448,6 +492,9 @@
   const input = document.getElementById('ccs-text');
   const send = document.getElementById('ccs-send');
   const closeBtn = document.getElementById('ccs-close');
+  const pushBox = document.getElementById('ccs-push-box');
+  const pushText = document.getElementById('ccs-push-text');
+  const pushBtn = document.getElementById('ccs-push-btn');
 
   function updateViewportHeight() {
     const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -544,6 +591,65 @@
     return j;
   }
 
+
+  async function refreshPushStatus() {
+    if (!conversationId || !pushBox || !pushBtn || !pushText) return;
+
+    try {
+      const r = await fetch(baseUrl + '/api/widget/conversations/' + encodeURIComponent(conversationId) + '/push-status?v=' + Date.now(), {
+        cache: 'no-store'
+      });
+      const j = await r.json();
+
+      pushBox.classList.add('show');
+
+      if (j.status === 'enabled') {
+        pushText.textContent = '通知已開啟，離線也能收到客服回覆。';
+        pushBtn.textContent = '已開啟';
+        pushBtn.classList.add('done');
+        pushBtn.disabled = true;
+      } else if (j.status === 'denied') {
+        pushText.textContent = '通知已被拒絕，可到瀏覽器網站設定重新開啟。';
+        pushBtn.textContent = '已拒絕';
+        pushBtn.classList.add('done');
+        pushBtn.disabled = true;
+      } else if (j.status === 'unsupported') {
+        pushText.textContent = '此瀏覽器不支援網頁通知，請留下聯絡方式。';
+        pushBtn.textContent = '不支援';
+        pushBtn.classList.add('done');
+        pushBtn.disabled = true;
+      } else {
+        pushText.textContent = '離線也想收到客服回覆通知？';
+        pushBtn.textContent = '開啟通知';
+        pushBtn.classList.remove('done');
+        pushBtn.disabled = false;
+      }
+    } catch (e) {}
+  }
+
+  async function openPushSetup() {
+    await ensureConversation();
+
+    const notifyUrl = baseUrl + '/notify.html?cid=' + encodeURIComponent(conversationId) + '&return=' + encodeURIComponent(location.href);
+    const w = window.open(notifyUrl, '_blank', 'width=430,height=720');
+
+    if (!w) {
+      location.href = notifyUrl;
+      return;
+    }
+
+    setTimeout(refreshPushStatus, 2500);
+  }
+
+  window.addEventListener('message', function (event) {
+    try {
+      if (event.origin !== baseUrl) return;
+      if (event.data && event.data.type === 'ccs_push_status') {
+        refreshPushStatus();
+      }
+    } catch (e) {}
+  });
+
   async function getConfig() {
     config = await fetch(baseUrl + '/config?v=' + Date.now(), {
       cache: 'no-store'
@@ -633,6 +739,7 @@
   async function loadMessages() {
     await getConfig();
     await ensureConversation();
+    refreshPushStatus();
 
     msgs.innerHTML = '';
 
@@ -725,6 +832,7 @@
   btn.onclick = toggleChat;
   closeBtn.onclick = closeChat;
   overlay.onclick = closeChat;
+  if (pushBtn) pushBtn.onclick = openPushSetup;
 
   function clearFilePreview() {
     if (fileInput) fileInput.value = '';
@@ -822,7 +930,7 @@
     }, 150);
   });
 
-  if (autoOpen) {
+  if (autoOpen || shouldOpenFromNotification) {
     setTimeout(() => {
       openChat();
     }, Number.isFinite(openDelay) ? openDelay : 300);

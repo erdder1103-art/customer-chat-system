@@ -11,6 +11,7 @@ const Database = require('better-sqlite3');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
 const multer = require('multer');
+const webpush = require('web-push');
 
 const app = express();
 const server = http.createServer(app);
@@ -118,6 +119,19 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT DEFAULT ''
 );
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conversation_id TEXT NOT NULL,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  user_agent TEXT DEFAULT '',
+  status TEXT DEFAULT 'active',
+  error TEXT DEFAULT '',
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 `);
 
 function ensureColumn(table, column, definition) {
@@ -162,7 +176,9 @@ function ensureColumn(table, column, definition) {
   ['network_rtt', "TEXT DEFAULT ''"],
   ['platform', "TEXT DEFAULT ''"],
   ['user_agent', "TEXT DEFAULT ''"],
-  ['offline_auto_reply_key', "TEXT DEFAULT ''"]
+  ['offline_auto_reply_key', "TEXT DEFAULT ''"],
+  ['push_status', "TEXT DEFAULT 'none'"],
+  ['push_updated_at', "TEXT DEFAULT ''"]
 ].forEach(([col, def]) => ensureColumn('conversations', col, def));
 
 ensureColumn('messages', 'sender_login', "TEXT DEFAULT ''");
@@ -322,6 +338,128 @@ function setSetting(key, value) {
   `).run(key, String(value || ''));
 }
 
+function getVapidKeys() {
+  let publicKey = setting('vapid_public_key');
+  let privateKey = setting('vapid_private_key');
+
+  if (!publicKey || !privateKey) {
+    const keys = webpush.generateVAPIDKeys();
+    publicKey = keys.publicKey;
+    privateKey = keys.privateKey;
+    setSetting('vapid_public_key', publicKey);
+    setSetting('vapid_private_key', privateKey);
+    console.log('Generated VAPID keys and saved to SQLite settings');
+  }
+
+  const subject = process.env.VAPID_SUBJECT || 'mailto:admin@example.com';
+  webpush.setVapidDetails(subject, publicKey, privateKey);
+
+  return { publicKey, privateKey, subject };
+}
+
+const VAPID_KEYS = getVapidKeys();
+
+function notificationUrlForConversation(convo) {
+  const raw = String(convo && convo.source_url ? convo.source_url : '').trim();
+
+  try {
+    const u = raw ? new URL(raw) : null;
+    if (u) {
+      u.searchParams.set('ccs_open', '1');
+      return u.toString();
+    }
+  } catch (_) {}
+
+  return '/';
+}
+
+function updateConversationPushStatus(conversationId) {
+  const active = db.prepare(`
+    SELECT COUNT(*) AS n
+    FROM push_subscriptions
+    WHERE conversation_id=? AND status='active'
+  `).get(conversationId);
+
+  const any = db.prepare(`
+    SELECT status
+    FROM push_subscriptions
+    WHERE conversation_id=?
+    ORDER BY updated_at DESC, id DESC
+    LIMIT 1
+  `).get(conversationId);
+
+  const status = active && active.n > 0 ? 'enabled' : (any ? any.status : 'none');
+
+  db.prepare(`
+    UPDATE conversations
+    SET push_status=?, push_updated_at=?
+    WHERE id=?
+  `).run(status, nowIso(), conversationId);
+
+  emitConversation(conversationId);
+
+  return status;
+}
+
+async function sendPushToConversation(conversationId, payload) {
+  const convo = convoById(conversationId);
+  if (!convo) return { sent: 0, failed: 0 };
+
+  const rows = db.prepare(`
+    SELECT *
+    FROM push_subscriptions
+    WHERE conversation_id=? AND status='active'
+  `).all(conversationId);
+
+  if (!rows.length) return { sent: 0, failed: 0 };
+
+  const title = payload.title || publicConfig().title || '客服訊息通知';
+  const body = payload.body || '你有新訊息通知';
+  const url = payload.url || notificationUrlForConversation(convo);
+
+  let sent = 0;
+  let failed = 0;
+
+  await Promise.all(rows.map(async row => {
+    const subscription = {
+      endpoint: row.endpoint,
+      keys: {
+        p256dh: row.p256dh,
+        auth: row.auth
+      }
+    };
+
+    try {
+      await webpush.sendNotification(subscription, JSON.stringify({
+        title,
+        body,
+        url,
+        conversation_id: conversationId,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png'
+      }));
+      sent += 1;
+      db.prepare(`
+        UPDATE push_subscriptions
+        SET status='active', error='', updated_at=?
+        WHERE id=?
+      `).run(nowIso(), row.id);
+    } catch (e) {
+      failed += 1;
+      const expired = e && (e.statusCode === 404 || e.statusCode === 410);
+      db.prepare(`
+        UPDATE push_subscriptions
+        SET status=?, error=?, updated_at=?
+        WHERE id=?
+      `).run(expired ? 'expired' : 'failed', String(e && e.message ? e.message : e).slice(0, 300), nowIso(), row.id);
+    }
+  }));
+
+  updateConversationPushStatus(conversationId);
+
+  return { sent, failed };
+}
+
 function normalizeAgentDisplayNames(value) {
   if (Array.isArray(value)) {
     return value.map(x => String(x || '').trim()).filter(Boolean).join('\n');
@@ -444,7 +582,8 @@ function publicConfig() {
       '目前非工作时间,请留下联系方式我们会与你联系协助你领取体验金。',
     quick_replies: quickReplies,
     agent_display_names: setting('agent_display_names') || '',
-    agent_display_names_text: setting('agent_display_names') || ''
+    agent_display_names_text: setting('agent_display_names') || '',
+    vapid_public_key: VAPID_KEYS.publicKey
   };
 }
 
@@ -478,6 +617,21 @@ app.get('/widget.js', (req, res) => {
 app.get('/config', (req, res) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   res.json(publicConfig());
+});
+
+app.get('/sw.js', (req, res) => {
+  res.type('application/javascript');
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.sendFile(path.join(__dirname, 'public', 'sw.js'));
+});
+
+app.get('/notify.html', (req, res) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.sendFile(path.join(__dirname, 'public', 'notify.html'));
+});
+
+app.get('/api/push/public-key', (req, res) => {
+  res.json({ ok: true, publicKey: VAPID_KEYS.publicKey });
 });
 
 app.post('/api/login', (req, res) => {
@@ -827,6 +981,90 @@ app.post('/api/widget/conversations', (req, res) => {
   res.json({ id });
 });
 
+
+app.get('/api/widget/conversations/:id/push-status', (req, res) => {
+  const convo = convoById(req.params.id);
+
+  if (!convo) {
+    return res.status(404).json({ error: 'conversation not found' });
+  }
+
+  const count = db.prepare(`
+    SELECT COUNT(*) AS n
+    FROM push_subscriptions
+    WHERE conversation_id=? AND status='active'
+  `).get(req.params.id);
+
+  const status = count && count.n > 0 ? 'enabled' : (convo.push_status || 'none');
+
+  res.json({ ok: true, status, enabled: status === 'enabled' });
+});
+
+app.post('/api/widget/conversations/:id/push-status', (req, res) => {
+  const convo = convoById(req.params.id);
+
+  if (!convo) {
+    return res.status(404).json({ error: 'conversation not found' });
+  }
+
+  const status = ['none','enabled','denied','unsupported','expired','failed'].includes(req.body.status)
+    ? req.body.status
+    : 'none';
+
+  db.prepare(`
+    UPDATE conversations
+    SET push_status=?, push_updated_at=?
+    WHERE id=?
+  `).run(status, nowIso(), req.params.id);
+
+  emitConversation(req.params.id);
+
+  res.json({ ok: true, status });
+});
+
+app.post('/api/widget/conversations/:id/push-subscription', (req, res) => {
+  const convo = convoById(req.params.id);
+
+  if (!convo) {
+    return res.status(404).json({ error: 'conversation not found' });
+  }
+
+  const sub = req.body.subscription || req.body;
+  const endpoint = clean(sub.endpoint, 1200);
+  const keys = sub.keys || {};
+  const p256dh = clean(keys.p256dh, 500);
+  const auth = clean(keys.auth, 500);
+
+  if (!endpoint || !p256dh || !auth) {
+    return res.status(400).json({ error: 'invalid subscription' });
+  }
+
+  db.prepare(`
+    INSERT INTO push_subscriptions (conversation_id, endpoint, p256dh, auth, user_agent, status, error, created_at, updated_at)
+    VALUES (?,?,?,?,?,'active','',?,?)
+    ON CONFLICT(endpoint) DO UPDATE SET
+      conversation_id=excluded.conversation_id,
+      p256dh=excluded.p256dh,
+      auth=excluded.auth,
+      user_agent=excluded.user_agent,
+      status='active',
+      error='',
+      updated_at=excluded.updated_at
+  `).run(
+    req.params.id,
+    endpoint,
+    p256dh,
+    auth,
+    clean(req.headers['user-agent'], 1000),
+    nowIso(),
+    nowIso()
+  );
+
+  updateConversationPushStatus(req.params.id);
+
+  res.json({ ok: true, status: 'enabled' });
+});
+
 app.patch('/api/widget/conversations/:id/profile', (req, res) => {
   const old = convoById(req.params.id);
 
@@ -972,6 +1210,12 @@ app.post('/api/conversations/:id/messages', requireLogin, (req, res) => {
   io.to(req.params.id).emit('message', msg);
 
   emitConversation(req.params.id);
+
+  const pushText = body || (attachment.attachment_url ? '你有新附件通知' : '你有新訊息通知');
+  sendPushToConversation(req.params.id, {
+    title: publicConfig().title || '客服訊息通知',
+    body: `${displayName}：${pushText}`.slice(0, 180)
+  }).catch(e => console.error('push send failed:', e && e.message ? e.message : e));
 
   res.json(msg);
 });
