@@ -26,6 +26,8 @@
     source_site: scriptEl.dataset.site || '',
     source_title: scriptEl.dataset.title || document.title || '',
     source_campaign: scriptEl.dataset.campaign || '',
+    source_group: scriptEl.dataset.sourceGroup || scriptEl.getAttribute('data-source-group') || scriptEl.dataset.campaign || '',
+    source_label: scriptEl.dataset.sourceLabel || scriptEl.getAttribute('data-source-label') || scriptEl.dataset.title || document.title || '',
     source_url: location.href,
     source_referrer: document.referrer || ''
   };

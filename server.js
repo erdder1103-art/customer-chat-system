@@ -68,6 +68,8 @@ CREATE TABLE IF NOT EXISTS conversations (
   source_site TEXT DEFAULT '',
   source_title TEXT DEFAULT '',
   source_campaign TEXT DEFAULT '',
+  source_group TEXT DEFAULT '',
+  source_label TEXT DEFAULT '',
   source_url TEXT DEFAULT '',
   source_referrer TEXT DEFAULT '',
   utm_source TEXT DEFAULT '',
@@ -128,6 +130,8 @@ function ensureColumn(table, column, definition) {
   ['source_site', "TEXT DEFAULT ''"],
   ['source_title', "TEXT DEFAULT ''"],
   ['source_campaign', "TEXT DEFAULT ''"],
+  ['source_group', "TEXT DEFAULT ''"],
+  ['source_label', "TEXT DEFAULT ''"],
   ['source_url', "TEXT DEFAULT ''"],
   ['source_referrer', "TEXT DEFAULT ''"],
   ['utm_source', "TEXT DEFAULT ''"],
@@ -480,8 +484,35 @@ app.get('/api/conversations', requireLogin, (req, res) => {
     ? req.query.box
     : 'inbox';
 
-  const where = box === 'all' ? '1=1' : 'c.folder=?';
-  const params = box === 'all' ? [] : [box];
+  const sourceGroup = clean(req.query.source_group || '', 100);
+  const readStatus = ['all','unread','read'].includes(req.query.read_status)
+    ? req.query.read_status
+    : 'all';
+
+  const whereParts = [];
+  const params = [];
+
+  if (box !== 'all') {
+    whereParts.push('c.folder=?');
+    params.push(box);
+  }
+
+  if (sourceGroup) {
+    if (sourceGroup === '__uncategorized__') {
+      whereParts.push("(c.source_group IS NULL OR c.source_group='')");
+    } else {
+      whereParts.push('c.source_group=?');
+      params.push(sourceGroup);
+    }
+  }
+
+  if (readStatus === 'unread') {
+    whereParts.push('c.unread_count > 0');
+  } else if (readStatus === 'read') {
+    whereParts.push('(c.unread_count IS NULL OR c.unread_count = 0)');
+  }
+
+  const where = whereParts.length ? whereParts.join(' AND ') : '1=1';
 
   const rows = db.prepare(`
     SELECT c.*,
@@ -489,7 +520,9 @@ app.get('/api/conversations', requireLogin, (req, res) => {
       (SELECT sender_type FROM messages WHERE conversation_id=c.id ORDER BY id DESC LIMIT 1) AS last_sender_type
     FROM conversations c
     WHERE ${where}
-    ORDER BY c.updated_at DESC
+    ORDER BY
+      CASE WHEN c.unread_count > 0 THEN 0 ELSE 1 END,
+      c.updated_at DESC
   `).all(...params);
 
   res.json(rows);
@@ -546,6 +579,18 @@ app.post('/api/conversations/:id/read', requireLogin, (req, res) => {
   }
 
   db.prepare('UPDATE conversations SET unread_count=0 WHERE id=?').run(req.params.id);
+
+  emitConversation(req.params.id);
+
+  res.json({ ok: true });
+});
+
+app.post('/api/conversations/:id/unread', requireLogin, (req, res) => {
+  if (!convoById(req.params.id)) {
+    return res.status(404).json({ error: 'not found' });
+  }
+
+  db.prepare('UPDATE conversations SET unread_count=CASE WHEN unread_count > 0 THEN unread_count ELSE 1 END, updated_at=? WHERE id=?').run(nowIso(), req.params.id);
 
   emitConversation(req.params.id);
 
@@ -619,10 +664,10 @@ app.post('/api/widget/conversations', (req, res) => {
   db.prepare(`
     INSERT INTO conversations (
       id, visitor_name, visitor_contact, visitor_account, visitor_online, visitor_last_seen,
-      source_site, source_title, source_campaign, source_url, source_referrer, utm_source, utm_medium, utm_campaign,
+      source_site, source_title, source_campaign, source_group, source_label, source_url, source_referrer, utm_source, utm_medium, utm_campaign,
       visitor_code, device_type, device_model, device_os, browser, screen_size, language, timezone, network_type,
       network_effective_type, network_downlink, network_rtt, platform, user_agent, created_at, updated_at
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     id,
     clean(req.body.visitor_name, 120) || '訪客',
@@ -634,6 +679,8 @@ app.post('/api/widget/conversations', (req, res) => {
     clean(req.body.source_site),
     clean(req.body.source_title),
     clean(req.body.source_campaign),
+    clean(req.body.source_group || req.body.sourceGroup || req.body.source_campaign || '', 100),
+    clean(req.body.source_label || req.body.sourceLabel || req.body.source_title || req.body.source_group || req.body.source_campaign || '', 120),
     clean(req.body.source_url, 1000),
     clean(req.body.source_referrer, 1000),
     clean(req.body.utm_source),
