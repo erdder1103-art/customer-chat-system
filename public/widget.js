@@ -313,6 +313,61 @@
     color:#39ff88;
   }
 
+
+
+  #ccs-push-guide{
+    display:none;
+    position:absolute;
+    inset:0;
+    z-index:5;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(0,0,0,.68);
+    backdrop-filter:blur(3px);
+  }
+  #ccs-push-guide.show{display:flex;}
+  .ccs-push-card{
+    width:100%;
+    max-width:320px;
+    border-radius:18px;
+    overflow:hidden;
+    background:#151515;
+    border:1px solid rgba(244,197,66,.65);
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+  }
+  .ccs-push-card-head{
+    padding:15px 16px;
+    background:linear-gradient(135deg,#f4c542,#b98408);
+    color:#111;
+    font-weight:1000;
+    font-size:17px;
+    line-height:1.25;
+  }
+  .ccs-push-card-body{
+    padding:15px 16px;
+    color:#ddd;
+    font-size:14px;
+    line-height:1.55;
+  }
+  .ccs-push-card-body strong{color:#ffd45a;}
+  .ccs-push-card-actions{
+    display:grid;
+    gap:8px;
+    padding:0 16px 16px;
+  }
+  .ccs-push-main-btn,
+  .ccs-push-later-btn{
+    height:44px;
+    border:0;
+    border-radius:12px;
+    font-weight:1000;
+    cursor:pointer;
+    font-size:15px;
+  }
+  .ccs-push-main-btn{background:#f4c542;color:#111;}
+  .ccs-push-later-btn{background:#2a2a2a;color:#fff;border:1px solid #444;}
+
   #ccs-msgs{
     flex:1 1 auto;
     min-height:0;
@@ -437,7 +492,62 @@
       bottom:calc(16px + var(--ccs-safe-bottom));
     }
 
-    #ccs-msgs{
+  
+
+  #ccs-push-guide{
+    display:none;
+    position:absolute;
+    inset:0;
+    z-index:5;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(0,0,0,.68);
+    backdrop-filter:blur(3px);
+  }
+  #ccs-push-guide.show{display:flex;}
+  .ccs-push-card{
+    width:100%;
+    max-width:320px;
+    border-radius:18px;
+    overflow:hidden;
+    background:#151515;
+    border:1px solid rgba(244,197,66,.65);
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+  }
+  .ccs-push-card-head{
+    padding:15px 16px;
+    background:linear-gradient(135deg,#f4c542,#b98408);
+    color:#111;
+    font-weight:1000;
+    font-size:17px;
+    line-height:1.25;
+  }
+  .ccs-push-card-body{
+    padding:15px 16px;
+    color:#ddd;
+    font-size:14px;
+    line-height:1.55;
+  }
+  .ccs-push-card-body strong{color:#ffd45a;}
+  .ccs-push-card-actions{
+    display:grid;
+    gap:8px;
+    padding:0 16px 16px;
+  }
+  .ccs-push-main-btn,
+  .ccs-push-later-btn{
+    height:44px;
+    border:0;
+    border-radius:12px;
+    font-weight:1000;
+    cursor:pointer;
+    font-size:15px;
+  }
+  .ccs-push-main-btn{background:#f4c542;color:#111;}
+  .ccs-push-later-btn{background:#2a2a2a;color:#fff;border:1px solid #444;}
+
+  #ccs-msgs{
       padding-bottom:14px;
     }
   }
@@ -495,6 +605,12 @@
   const pushBox = document.getElementById('ccs-push-box');
   const pushText = document.getElementById('ccs-push-text');
   const pushBtn = document.getElementById('ccs-push-btn');
+  const pushGuide = document.getElementById('ccs-push-guide');
+  const pushGuideTitle = document.getElementById('ccs-push-guide-title');
+  const pushGuideBody = document.getElementById('ccs-push-guide-body');
+  const pushGuideEnable = document.getElementById('ccs-push-guide-enable');
+  const pushGuideLater = document.getElementById('ccs-push-guide-later');
+  let pushGuideShown = false;
 
   function updateViewportHeight() {
     const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
@@ -592,6 +708,83 @@
   }
 
 
+
+
+  function getPushEnvironment() {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPhone|iPad|iPod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    const isInApp = /FBAN|FBAV|Instagram|Line|MicroMessenger|Twitter|TikTok|Telegram|Pinterest/i.test(ua);
+    const hasApi = ('serviceWorker' in navigator) && ('PushManager' in window) && ('Notification' in window);
+
+    if (isInApp) {
+      return {
+        supported: false,
+        reason: 'inapp',
+        title: '目前瀏覽器不支援推播',
+        body: '您目前可能在 LINE / FB / IG / Telegram / App 內建瀏覽器中開啟。\n\n若要收到離線通知，請使用 Chrome 或 Safari 重新開啟此頁。'
+      };
+    }
+
+    if (isIOS && !isStandalone) {
+      return {
+        supported: false,
+        reason: 'ios_home',
+        title: 'iPhone 需加入主畫面',
+        body: 'iPhone 開啟推播通常需要：\n1. 使用 Safari 開啟此頁\n2. 點分享\n3. 加入主畫面\n4. 從桌面圖示重新打開\n5. 再點開啟通知'
+      };
+    }
+
+    if (!hasApi) {
+      return {
+        supported: false,
+        reason: 'api',
+        title: '此瀏覽器不支援推播',
+        body: '目前瀏覽器未提供推播功能。建議使用 Android Chrome / Edge / Samsung Internet，或留下 Telegram / 其他聯絡方式。'
+      };
+    }
+
+    return {
+      supported: true,
+      reason: 'ok',
+      title: '開啟客服通知',
+      body: '開啟後，即使您離開網頁，客服回覆時也可以收到通知提醒。\n\n點「立即開啟通知」後，請在瀏覽器提示中按允許。'
+    };
+  }
+
+  async function reportPushStatus(status) {
+    if (!conversationId) return;
+    try {
+      await fetch(baseUrl + '/api/widget/conversations/' + encodeURIComponent(conversationId) + '/push-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+    } catch (e) {}
+  }
+
+  function hidePushGuide() {
+    if (pushGuide) pushGuide.classList.remove('show');
+  }
+
+  async function showPushGuide(status) {
+    if (!pushGuide || !pushGuideTitle || !pushGuideBody || !pushGuideEnable || !pushGuideLater) return;
+    if (pushGuideShown) return;
+    if (status === 'enabled' || status === 'denied') return;
+
+    pushGuideShown = true;
+    const env = getPushEnvironment();
+    pushGuideTitle.textContent = env.title;
+    pushGuideBody.textContent = env.body;
+    pushGuideEnable.textContent = env.supported ? '立即開啟通知' : '我知道了';
+    pushGuideLater.textContent = env.supported ? '稍後再說' : '稍後再看';
+    pushGuide.classList.add('show');
+
+    if (!env.supported) {
+      await reportPushStatus('unsupported');
+    }
+  }
+
   async function refreshPushStatus() {
     if (!conversationId || !pushBox || !pushBtn || !pushText) return;
 
@@ -602,19 +795,20 @@
       const j = await r.json();
 
       pushBox.classList.add('show');
+      const status = j.status || 'none';
 
-      if (j.status === 'enabled') {
+      if (status === 'enabled') {
         pushText.textContent = '通知已開啟，離線也能收到客服回覆。';
         pushBtn.textContent = '已開啟';
         pushBtn.classList.add('done');
         pushBtn.disabled = true;
-      } else if (j.status === 'denied') {
+      } else if (status === 'denied') {
         pushText.textContent = '通知已被拒絕，可到瀏覽器網站設定重新開啟。';
         pushBtn.textContent = '已拒絕';
         pushBtn.classList.add('done');
         pushBtn.disabled = true;
-      } else if (j.status === 'unsupported') {
-        pushText.textContent = '此瀏覽器不支援網頁通知，請留下聯絡方式。';
+      } else if (status === 'unsupported') {
+        pushText.textContent = '此瀏覽器不支援推播，請改用 Chrome/Safari 或留下聯絡方式。';
         pushBtn.textContent = '不支援';
         pushBtn.classList.add('done');
         pushBtn.disabled = true;
@@ -624,11 +818,26 @@
         pushBtn.classList.remove('done');
         pushBtn.disabled = false;
       }
-    } catch (e) {}
+      return status;
+    } catch (e) { return 'none'; }
   }
 
   async function openPushSetup() {
     await ensureConversation();
+    const env = getPushEnvironment();
+
+    if (!env.supported) {
+      if (pushGuideTitle && pushGuideBody && pushGuide) {
+        pushGuideTitle.textContent = env.title;
+        pushGuideBody.textContent = env.body;
+        pushGuideEnable.textContent = '我知道了';
+        pushGuideLater.textContent = '關閉';
+        pushGuide.classList.add('show');
+      }
+      await reportPushStatus('unsupported');
+      setTimeout(refreshPushStatus, 600);
+      return;
+    }
 
     const notifyUrl = baseUrl + '/notify.html?cid=' + encodeURIComponent(conversationId) + '&return=' + encodeURIComponent(location.href);
     const w = window.open(notifyUrl, '_blank', 'width=430,height=720');
@@ -801,6 +1010,8 @@
     try {
       await loadMessages();
       loadSocket();
+      const currentPushStatus = await refreshPushStatus();
+      setTimeout(() => showPushGuide(currentPushStatus), 250);
 
       setTimeout(() => {
         updateViewportHeight();
@@ -833,6 +1044,8 @@
   closeBtn.onclick = closeChat;
   overlay.onclick = closeChat;
   if (pushBtn) pushBtn.onclick = openPushSetup;
+  if (pushGuideEnable) pushGuideEnable.onclick = function(){ const env=getPushEnvironment(); if(env.supported) openPushSetup(); else hidePushGuide(); };
+  if (pushGuideLater) pushGuideLater.onclick = hidePushGuide;
 
   function clearFilePreview() {
     if (fileInput) fileInput.value = '';

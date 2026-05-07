@@ -41,7 +41,45 @@
     .reply-attachment-preview{max-height:180px;overflow:auto;border-top:1px solid #333}.attach-preview-card{display:flex;align-items:center;gap:10px;padding:8px 10px;background:#141414;border-top:1px solid #333}.attach-preview-title{font-size:12px;color:#f4c542;white-space:nowrap}.attach-preview-img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid #444}.attach-preview-video{width:120px;height:72px;object-fit:cover;border-radius:10px;background:#000;border:1px solid #444}.attach-preview-file{font-size:12px;color:#ddd;background:#222;border:1px solid #444;border-radius:8px;padding:8px;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     html,body{height:100%;overflow:hidden}.app{height:100vh;max-height:100vh}.side,.main,.settings{height:100vh;max-height:100vh;min-height:0}.list,.msgs{min-height:0}.reply{flex:0 0 auto}.quick{flex:0 0 auto}.chat-head{flex:0 0 auto}#chatPanel{height:100%;max-height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 
-    .source-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;border-bottom:1px solid #333;background:#151515}.source-tabs .btn{font-size:13px;padding:8px 6px}.read-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.source-badge{display:inline-flex;align-items:center;max-width:100%;padding:3px 8px;border-radius:999px;background:#3a2f14;color:#ffd966;border:1px solid #735b22;font-size:12px;font-weight:900}.source-line{margin-top:7px}.source-line strong{color:#ffd966}.item.unread-item{border-left:4px solid #e83d3d;background:#211717}.item.unread-item.active{background:#2c2020}.item-title{justify-content:space-between}.item-main-title{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.read-filter-label{font-size:12px;color:#aaa;margin-bottom:4px}.push-pill{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:900;background:#333;color:#bbb}.push-pill.enabled{background:#153b25;color:#39ff88}.push-pill.denied,.push-pill.unsupported,.push-pill.expired{background:#4a2323;color:#ffb1b1}
+    .source-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:10px;border-bottom:1px solid #333;background:#151515}.source-tabs .btn{font-size:13px;padding:8px 6px}.read-tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}.source-badge{display:inline-flex;align-items:center;max-width:100%;padding:3px 8px;border-radius:999px;background:#3a2f14;color:#ffd966;border:1px solid #735b22;font-size:12px;font-weight:900}.source-line{margin-top:7px}.source-line strong{color:#ffd966}.item.unread-item{border-left:4px solid #e83d3d;background:#211717}.item.unread-item.active{background:#2c2020}.item-title{justify-content:space-between}.item-main-title{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.read-filter-label{font-size:12px;color:#aaa;margin-bottom:4px}.push-pill{display:inline-flex;align-items:center;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:900;background:#333;color:#bbb}.push-pill.enabled{background:#153b25;color:#39ff88}.push-pill.denied,.push-pill.unsupported,.push-pill.expired{background:#4a2323;color:#ffb1b1}.push-panel{margin-top:10px;padding:10px;border:1px solid #444;border-radius:10px;background:#1b1b1b}.push-panel-title{font-weight:900;color:#ffd966;margin-bottom:6px}.push-help{font-size:12px;color:#bbb;line-height:1.45;margin-top:6px}.btn.push-test{margin-top:8px;background:#153b25;border-color:#2aa65a;color:#fff;width:100%}
+
+  
+
+    /* ===== V12.2 後台精緻中央提示 / 確認視窗 ===== */
+    .toast{
+      position:fixed;
+      left:50%;
+      top:50%;
+      right:auto;
+      bottom:auto;
+      z-index:1000002;
+      min-width:260px;
+      max-width:min(420px,calc(100vw - 36px));
+      padding:16px 18px;
+      border-radius:16px;
+      background:linear-gradient(180deg,#1c1c1c,#111);
+      border:1px solid #f4c542;
+      color:#fff;
+      box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.04) inset;
+      font-size:15px;
+      font-weight:900;
+      text-align:center;
+      opacity:0;
+      transform:translate(-50%,-50%) scale(.96);
+      pointer-events:none;
+      transition:opacity .18s ease,transform .18s ease;
+    }
+    .toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    .toast.success{border-color:#2aa65a}.toast.warn{border-color:#f4c542}.toast.error{border-color:#e83d3d}
+    .ui-dialog-backdrop{position:fixed;inset:0;z-index:1000000;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:22px;backdrop-filter:blur(4px)}
+    .ui-dialog-backdrop.show{display:flex}
+    .ui-dialog{width:min(430px,calc(100vw - 36px));border-radius:20px;overflow:hidden;background:#121212;border:1px solid rgba(244,197,66,.6);box-shadow:0 26px 90px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.04) inset;color:#fff;animation:uiPop .16s ease-out}
+    @keyframes uiPop{from{opacity:0;transform:scale(.94) translateY(8px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    .ui-dialog-head{padding:16px 18px;background:linear-gradient(135deg,#f4c542,#b98408);color:#111;font-weight:1000;font-size:18px}
+    .ui-dialog-body{padding:18px;color:#e7e7e7;line-height:1.65;font-size:15px;white-space:pre-wrap}
+    .ui-dialog-actions{display:flex;gap:10px;justify-content:flex-end;padding:0 18px 18px}
+    .ui-dialog-actions .btn{min-width:92px}
+    .ui-dialog-actions .btn.secondary{background:#292929;color:#fff;border-color:#555}
 
   </style>
 </head>
@@ -77,6 +115,14 @@
   </aside>
 </div>
 <div id="toast" class="toast">已儲存</div>
+<div id="uiDialogBackdrop" class="ui-dialog-backdrop">
+  <div class="ui-dialog" role="dialog" aria-modal="true">
+    <div id="uiDialogTitle" class="ui-dialog-head">提示</div>
+    <div id="uiDialogMessage" class="ui-dialog-body">內容</div>
+    <div id="uiDialogActions" class="ui-dialog-actions"></div>
+  </div>
+</div>
+
 <div id="sopModalBackdrop" class="modal-backdrop">
   <div class="sop-modal" role="dialog" aria-modal="true">
     <div class="sop-modal-head">
@@ -114,7 +160,40 @@ const $=id=>document.getElementById(id);
 const socket=io();
 
 function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function showToast(message,type='success'){const t=$('toast'); if(!t)return; t.textContent=message; t.className='toast show '+type; clearTimeout(showToast._timer); showToast._timer=setTimeout(()=>{t.className='toast '+type;},1800);}
+function showToast(message,type='success'){
+  const t=$('toast');
+  if(!t)return;
+  t.textContent=message;
+  t.className='toast show '+type;
+  clearTimeout(showToast._timer);
+  showToast._timer=setTimeout(()=>{t.className='toast '+type;},1500);
+}
+function uiDialog(title,message,buttons){
+  return new Promise(resolve=>{
+    const back=$('uiDialogBackdrop'), titleEl=$('uiDialogTitle'), msgEl=$('uiDialogMessage'), actions=$('uiDialogActions');
+    if(!back||!titleEl||!msgEl||!actions){ resolve(false); return; }
+    titleEl.textContent=title||'提示';
+    msgEl.textContent=message||'';
+    actions.innerHTML='';
+    (buttons||[{text:'確定',value:true,cls:'primary'}]).forEach(b=>{
+      const btn=document.createElement('button');
+      btn.className='btn '+(b.cls||'');
+      btn.textContent=b.text;
+      btn.onclick=()=>{ back.classList.remove('show'); resolve(b.value); };
+      actions.appendChild(btn);
+    });
+    back.classList.add('show');
+  });
+}
+function uiAlert(message,title='提示'){
+  return uiDialog(title,message,[{text:'知道了',value:true,cls:'primary'}]);
+}
+function uiConfirm(message,title='請確認'){
+  return uiDialog(title,message,[
+    {text:'取消',value:false,cls:'secondary'},
+    {text:'確定',value:true,cls:'primary'}
+  ]);
+}
 function linkify(text){return esc(text).replace(/(https?:\/\/[^\s<]+|www\.[^\s<]+)/gi,function(url){const clean=url.replace(/[),.;!?]+$/g,''); const tail=url.slice(clean.length); const href=clean.startsWith('www.')?'https://'+clean:clean; return '<a href="'+href+'" target="_blank" rel="noopener noreferrer">'+clean+'</a>'+tail;});}
 
 function pushLabel(c){
@@ -163,9 +242,9 @@ async function saveSettings(){ const payload={support_status:$('supportStatus').
 async function loadConversations(){ const qs=new URLSearchParams({box:currentBox,read_status:currentReadStatus}); if(currentSourceGroup) qs.set('source_group',currentSourceGroup); const r=await api('/api/conversations?'+qs.toString()); conversations=await r.json(); renderList(); updateTitle(); }
 function renderList(){ const q=$('search').value.toLowerCase(); const st=$('statusFilter').value; const on=$('onlineFilter').value; const list=$('list'); list.innerHTML=''; conversations.filter(c=>{ const hay=[c.visitor_name,c.source_title,c.source_campaign,c.source_group,c.source_label,c.last_message,c.ip_country_zh,c.ip_city,c.device_model].join(' ').toLowerCase(); if(q && !hay.includes(q)) return false; if(st && c.status!==st) return false; if(on!=='' && String(c.visitor_online)!==on) return false; return true; }).forEach(c=>{ const div=document.createElement('div'); const unread=Number(c.unread_count||0)>0; div.className='item '+(unread?'unread-item ':'')+(c.id===currentId?'active':''); div.onclick=()=>openConversation(c.id); div.innerHTML=`<div class="item-title"><span class="item-main-title">${esc(c.visitor_name||'訪客')} <span class="pill ${c.visitor_online?'':'off'}">${c.visitor_online?'在線':'離線'}</span></span>${c.unread_count?`<span class="unread">${c.unread_count}</span>`:''}</div><div class="source-line"><span class="source-badge">【${esc(sourceGroupLabel(c))}】${esc(sourceShortLabel(c))}</span> <span class="push-pill ${pushLabel(c).cls}">${pushLabel(c).text}</span></div><div class="snippet">${esc(c.last_message||'')}</div><div class="meta">${fmt(c.updated_at)}</div>`; list.appendChild(div); }); }
 async function openConversation(id){ currentId=id; renderedIds.clear(); socket.emit('join',id); await api('/api/conversations/'+id+'/read',{method:'POST'}); const r=await api('/api/conversations/'+id); const j=await r.json(); $('chatEmpty').classList.add('hidden'); $('chatPanel').classList.remove('hidden'); renderConversation(j.conversation,j.messages); await loadConversations(); }
-function renderConversation(c,msgs){ $('convTitle').textContent=c.visitor_name||'訪客'; $('convSub').textContent=`ID: ${c.id} ｜ 建立：${fmt(c.created_at)} ｜ 最後上線：${fmt(c.visitor_last_seen)}`; $('convActions').innerHTML=actionsHtml(c); $('convInfo').innerHTML=infoHtml(c); const box=$('msgs'); box.innerHTML=''; msgs.forEach(renderMessage); box.scrollTop=box.scrollHeight; }
-function actionsHtml(c){ if(c.folder==='trash') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="deleteConv()">永久刪除</button>`; if(c.folder==='archive') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="trashConv()">刪除</button>`; return `<button class="btn" onclick="markRead()">標記已讀</button><button class="btn" onclick="markUnread()">標記未讀</button><button class="btn warn" onclick="archiveConv()">封存</button><button class="btn danger" onclick="trashConv()">刪除</button><button class="btn primary" onclick="refreshAll()">刷新</button>`; }
-function infoHtml(c){ const push=pushLabel(c); return `<b>來源資訊</b><br>來源分類：${esc(sourceGroupLabel(c))}<br>列表標籤：${esc(sourceShortLabel(c))}<br>落地頁：${esc(c.source_title||'-')}<br>活動：${esc(c.source_campaign||'-')}<br>網址：${esc(c.source_url||'-')}<hr><b>推播通知</b><br>狀態：<span class="push-pill ${push.cls}">${push.text}</span><br>更新：${esc(c.push_updated_at||'-')}<hr><b>IP / 地區</b><br>IP：${esc(c.ip_address||'-')}<br>地區：${esc(regionLabel(c))}<br>ISP：${esc(c.ip_isp||'-')}<hr><b>設備資訊</b><br>裝置：${esc(c.device_model||'-')}<br>類型：${esc(c.device_type||'-')}<br>系統：${esc(c.device_os||'-')}<br>瀏覽器：${esc(c.browser||'-')}<br>螢幕：${esc(c.screen_size||'-')}<br>語言：${esc(c.language||'-')}<br>時區：${esc(c.timezone||'-')}<br>網路：${esc(networkLabel(c))}<br><br><b>User-Agent</b><br>${esc(c.user_agent||'-')}`; }
+function renderConversation(c,msgs){ $('convTitle').textContent=c.visitor_name||'訪客'; const push=pushLabel(c); $('convSub').innerHTML=`ID: ${esc(c.id)} ｜ 建立：${esc(fmt(c.created_at))} ｜ 最後上線：${esc(fmt(c.visitor_last_seen))} ｜ <span class="push-pill ${push.cls}">${push.text}</span>`; $('convActions').innerHTML=actionsHtml(c); $('convInfo').innerHTML=infoHtml(c); const box=$('msgs'); box.innerHTML=''; msgs.forEach(renderMessage); box.scrollTop=box.scrollHeight; }
+function actionsHtml(c){ if(c.folder==='trash') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="deleteConv()">永久刪除</button>`; if(c.folder==='archive') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="trashConv()">刪除</button>`; return `<button class="btn" onclick="markRead()">標記已讀</button><button class="btn" onclick="markUnread()">標記未讀</button><button class="btn" onclick="testPush()">測試推播</button><button class="btn warn" onclick="archiveConv()">封存</button><button class="btn danger" onclick="trashConv()">刪除</button><button class="btn primary" onclick="refreshAll()">刷新</button>`; }
+function infoHtml(c){ const push=pushLabel(c); const help=push.cls==='enabled'?'這位客戶已開啟通知，客服回覆時會自動推播。':'客戶尚未開啟通知。請客戶在聊天室按「開啟通知」並允許瀏覽器通知。'; return `<div class="push-panel"><div class="push-panel-title">推播通知狀態</div><span class="push-pill ${push.cls}">${push.text}</span><div class="push-help">${esc(help)}<br>更新：${esc(c.push_updated_at||'-')}</div><button class="btn push-test" onclick="testPush()" type="button">測試推播給此客戶</button></div><hr><b>來源資訊</b><br>來源分類：${esc(sourceGroupLabel(c))}<br>列表標籤：${esc(sourceShortLabel(c))}<br>落地頁：${esc(c.source_title||'-')}<br>活動：${esc(c.source_campaign||'-')}<br>網址：${esc(c.source_url||'-')}<hr><b>IP / 地區</b><br>IP：${esc(c.ip_address||'-')}<br>地區：${esc(regionLabel(c))}<br>ISP：${esc(c.ip_isp||'-')}<hr><b>設備資訊</b><br>裝置：${esc(c.device_model||'-')}<br>類型：${esc(c.device_type||'-')}<br>系統：${esc(c.device_os||'-')}<br>瀏覽器：${esc(c.browser||'-')}<br>螢幕：${esc(c.screen_size||'-')}<br>語言：${esc(c.language||'-')}<br>時區：${esc(c.timezone||'-')}<br>網路：${esc(networkLabel(c))}<br><br><b>User-Agent</b><br>${esc(c.user_agent||'-')}`; }
 async function uploadAttachment(file){ const fd=new FormData(); fd.append('file',file); const r=await fetch('/api/upload',{method:'POST',body:fd}); const j=await r.json(); if(!r.ok||!j.ok) throw new Error(j.error||'upload failed'); return j; }
 function absoluteAttachmentUrl(url){ const raw=String(url||'').trim(); if(!raw)return ''; if(/^https?:\/\//i.test(raw))return raw; if(raw.startsWith('//'))return location.protocol+raw; if(raw.startsWith('/'))return location.origin+raw; return location.origin+'/'+raw.replace(/^\/+/, ''); }
 function isImageAttachment(m){ const type=String(m.attachment_type||'').toLowerCase(); const mime=String(m.attachment_mime||'').toLowerCase(); const url=String(m.attachment_url||'').toLowerCase().split('?')[0]; return type==='image'||mime.startsWith('image/')||/\.(png|jpe?g|gif|webp|svg)$/i.test(url); }
@@ -180,15 +259,16 @@ function updateSopAttachPreview(){ const el=$('sopAttachPreview'); if(!el)return
 function updateReplyAttachmentPreview(){ const el=$('replyAttachmentPreview'); if(!el)return; const file=$('replyFileInput')&&$('replyFileInput').files&&$('replyFileInput').files[0]; if(file){ const type=file.type&&file.type.startsWith('image/')?'image':(file.type&&file.type.startsWith('video/')?'video':'file'); let preview=''; if(type==='image'){ const url=URL.createObjectURL(file); preview='<img class="attach-preview-img" src="'+url+'" alt="圖片預覽" onload="setTimeout(()=>URL.revokeObjectURL(this.src),500)">'; } else if(type==='video'){ const url=URL.createObjectURL(file); preview='<video class="attach-preview-video" src="'+url+'" controls playsinline onloadeddata="setTimeout(()=>URL.revokeObjectURL(this.src),500)"></video>'; } else { preview='<div class="attach-preview-file">📎 '+esc(file.name)+'</div>'; } el.classList.add('show'); el.innerHTML='<div class="attach-preview-card"><div class="attach-preview-title">已選擇附件，送出後才會傳給客戶</div>'+preview+'<button class="btn" type="button" onclick="clearReplyAttachment()">移除</button></div>'; return; } if(replyAttachment&&replyAttachment.attachment_url){ el.classList.add('show'); const type=replyAttachment.attachment_type||''; let preview=''; if(type==='image') preview='<img class="attach-preview-img" src="'+absoluteAttachmentUrl(replyAttachment.attachment_url)+'" alt="圖片預覽">'; else if(type==='video') preview='<video class="attach-preview-video" src="'+absoluteAttachmentUrl(replyAttachment.attachment_url)+'" controls playsinline></video>';  else preview='<div class="attach-preview-file">📎 '+esc(replyAttachment.attachment_name||'附件')+'</div>'; el.innerHTML='<div class="attach-preview-card"><div class="attach-preview-title">已選擇 SOP 附件</div>'+preview+'<button class="btn" type="button" onclick="clearReplyAttachment()">移除</button></div>'; } else { el.classList.remove('show'); el.innerHTML=''; } }
 function clearReplyAttachment(){ replyAttachment=null; if($('replyFileInput')) $('replyFileInput').value=''; updateReplyAttachmentPreview(); }
 function clearSopEditor(){ if($('sopTitleInput')) $('sopTitleInput').value=''; if($('sopInput')) $('sopInput').value=''; sopEditingAttachment=null; if($('sopFileInput')) $('sopFileInput').value=''; updateSopAttachPreview(); if($('addSopBtn')){ $('addSopBtn').dataset.editIndex=''; $('addSopBtn').textContent='新增 SOP 話術'; } document.querySelectorAll('.sop-modal-row').forEach(x=>x.classList.remove('active')); }
-function renderSopEditor(){ const list=$('sopList'); updateSopCount(); if(!list)return; list.innerHTML=''; if(!quickReplyItems.length){ list.innerHTML='<div class="meta">尚未設定 SOP 話術，請在右側新增主題與內容。</div>'; return;} quickReplyItems.forEach((raw,i)=>{ const q=normalizeSopItem(raw); if(!q)return; const row=document.createElement('div'); row.className='sop-modal-row '+(q.attachment_url?'has-attach':''); if($('addSopBtn') && $('addSopBtn').dataset.editIndex===String(i)) row.classList.add('active'); row.innerHTML='<div class="sop-title" title="'+esc(q.title)+'">'+esc(q.title)+'</div><button class="btn" type="button">編輯</button><button class="btn danger" type="button">刪除</button>'; row.children[1].onclick=()=>{ $('sopTitleInput').value=q.title; $('sopInput').value=q.content; sopEditingAttachment=q.attachment_url?normalizeAttachment(q):null; updateSopAttachPreview(); $('sopTitleInput').focus(); $('addSopBtn').textContent='更新這則 SOP'; $('addSopBtn').dataset.editIndex=String(i); renderSopEditor(); }; row.children[2].onclick=()=>{ if(!confirm('確定刪除這則 SOP 話術？')) return; quickReplyItems.splice(i,1); syncSopHiddenField(); clearSopEditor(); renderQuick(); renderSopEditor(); }; list.appendChild(row); });}
+function renderSopEditor(){ const list=$('sopList'); updateSopCount(); if(!list)return; list.innerHTML=''; if(!quickReplyItems.length){ list.innerHTML='<div class="meta">尚未設定 SOP 話術，請在右側新增主題與內容。</div>'; return;} quickReplyItems.forEach((raw,i)=>{ const q=normalizeSopItem(raw); if(!q)return; const row=document.createElement('div'); row.className='sop-modal-row '+(q.attachment_url?'has-attach':''); if($('addSopBtn') && $('addSopBtn').dataset.editIndex===String(i)) row.classList.add('active'); row.innerHTML='<div class="sop-title" title="'+esc(q.title)+'">'+esc(q.title)+'</div><button class="btn" type="button">編輯</button><button class="btn danger" type="button">刪除</button>'; row.children[1].onclick=()=>{ $('sopTitleInput').value=q.title; $('sopInput').value=q.content; sopEditingAttachment=q.attachment_url?normalizeAttachment(q):null; updateSopAttachPreview(); $('sopTitleInput').focus(); $('addSopBtn').textContent='更新這則 SOP'; $('addSopBtn').dataset.editIndex=String(i); renderSopEditor(); }; row.children[2].onclick=async()=>{ if(!(await uiConfirm('確定刪除這則 SOP 話術？','刪除 SOP 話術'))) return; quickReplyItems.splice(i,1); syncSopHiddenField(); clearSopEditor(); renderQuick(); renderSopEditor(); }; list.appendChild(row); });}
 function addOrUpdateSop(){ const title=$('sopTitleInput').value.trim(); const content=$('sopInput').value.trim(); if(!content && !(sopEditingAttachment&&sopEditingAttachment.attachment_url)){showToast('請先輸入 SOP 話術內容或選擇圖片','warn'); return;} const item={title:title||content.slice(0,18)||'圖片話術',content,...(sopEditingAttachment||normalizeAttachment({}))}; const idx=$('addSopBtn').dataset.editIndex; if(idx!==undefined&&idx!==''){ quickReplyItems[Number(idx)]=item; showToast('SOP 話術已更新','success'); } else { quickReplyItems.push(item); showToast('SOP 話術已新增，記得儲存客服設定','success'); } clearSopEditor(); syncSopHiddenField(); renderQuick(); renderSopEditor(); }
 async function sendReply(){ const body=$('replyInput').value.trim(); const file=$('replyFileInput')&&$('replyFileInput').files&&$('replyFileInput').files[0]; if(!body&&!replyAttachment&&!file||!currentId)return; $('replyInput').value=''; let attachment=replyAttachment; if(file){ try{ attachment=await uploadAttachment(file); }catch(e){ showToast('附件上傳失敗：'+(e.message||'請稍後再試'),'error'); return; } } clearReplyAttachment(); const r=await api('/api/conversations/'+currentId+'/messages',{method:'POST',body:JSON.stringify({body,attachment})}); const m=await r.json(); renderMessage(m); await loadConversations(); }
 async function markRead(){ if(currentId){await api('/api/conversations/'+currentId+'/read',{method:'POST'}); await loadConversations();} }
 async function markUnread(){ if(currentId){await api('/api/conversations/'+currentId+'/unread',{method:'POST'}); await loadConversations();} }
-async function archiveConv(){ if(currentId&&confirm('確定封存？')){await api('/api/conversations/'+currentId+'/archive',{method:'POST'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
-async function trashConv(){ if(currentId&&confirm('確定移到垃圾桶？')){await api('/api/conversations/'+currentId+'/trash',{method:'POST'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
+async function testPush(){ if(!currentId){showToast('請先選擇對話','warn'); return;} const r=await api('/api/conversations/'+currentId+'/push-test',{method:'POST'}); const j=await r.json().catch(()=>({})); if(j.ok && Number(j.sent||0)>0){ showToast('測試推播已送出：'+j.sent+' 則','success'); } else { showToast('此客戶尚未開啟推播，無法送出','warn'); } await refreshAll(); }
+async function archiveConv(){ if(currentId&&(await uiConfirm('確定要封存這個對話？','封存對話'))){await api('/api/conversations/'+currentId+'/archive',{method:'POST'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); showToast('對話已封存','success');} }
+async function trashConv(){ if(currentId&&(await uiConfirm('確定移到垃圾桶？','刪除對話'))){await api('/api/conversations/'+currentId+'/trash',{method:'POST'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); showToast('已移到垃圾桶','success');} }
 async function restoreConv(){ if(currentId){await api('/api/conversations/'+currentId+'/restore',{method:'POST'}); await loadConversations(); openConversation(currentId);} }
-async function deleteConv(){ if(currentId&&confirm('永久刪除後無法恢復，確定？')){await api('/api/conversations/'+currentId,{method:'DELETE'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden');} }
+async function deleteConv(){ if(currentId&&(await uiConfirm('永久刪除後無法恢復，確定？','永久刪除'))){await api('/api/conversations/'+currentId,{method:'DELETE'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); showToast('已永久刪除','success');} }
 async function refreshAll(){ await loadConversations(); if(currentId) await openConversation(currentId); }
 function bind(){ document.querySelectorAll('[data-box]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-box]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentBox=b.dataset.box; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); document.querySelectorAll('[data-source-group]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-source-group]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentSourceGroup=b.dataset.sourceGroup||''; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); document.querySelectorAll('[data-read-status]').forEach(b=>b.onclick=()=>{document.querySelectorAll('[data-read-status]').forEach(x=>x.classList.remove('active')); b.classList.add('active'); currentReadStatus=b.dataset.readStatus||'all'; currentId=''; $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); loadConversations();}); ['search','statusFilter','onlineFilter'].forEach(id=>$(id).addEventListener('input',renderList)); $('saveSettings').onclick=saveSettings; $('sendBtn').onclick=sendReply; if($('replyFileBtn')) $('replyFileBtn').onclick=()=>$('replyFileInput').click(); if($('replyFileInput')) $('replyFileInput').onchange=async()=>{ const f=$('replyFileInput').files&&$('replyFileInput').files[0]; if(f){ replyAttachment=null; updateReplyAttachmentPreview(); } }; if($('sopFileBtn')) $('sopFileBtn').onclick=()=>$('sopFileInput').click(); if($('sopFileInput')) $('sopFileInput').onchange=async()=>{ const f=$('sopFileInput').files&&$('sopFileInput').files[0]; if(!f)return; try{ sopEditingAttachment=await uploadAttachment(f); updateSopAttachPreview(); showToast('SOP 圖片已上傳，記得新增/更新話術','success'); }catch(e){showToast('SOP 圖片上傳失敗：'+(e.message||'請稍後再試'),'error');} }; $('replyInput').addEventListener('keydown',e=>{if(e.key==='Enter')sendReply();}); $('logoutBtn').onclick=async()=>{await api('/api/logout',{method:'POST'});location.href='/admin/login.html';}; $('soundBtn').onclick=toggleSound; if($('openSopModalBtn')) $('openSopModalBtn').onclick=openSopModal; if($('closeSopModalBtn')) $('closeSopModalBtn').onclick=closeSopModal; if($('closeSopModalBtn2')) $('closeSopModalBtn2').onclick=closeSopModal; if($('sopModalBackdrop')) $('sopModalBackdrop').onclick=e=>{ if(e.target===$('sopModalBackdrop')) closeSopModal(); }; if($('addSopBtn')) $('addSopBtn').onclick=addOrUpdateSop; if($('clearSopEditBtn')) $('clearSopEditBtn').onclick=clearSopEditor; if($('saveSettingsFromSopBtn')) $('saveSettingsFromSopBtn').onclick=async()=>{ await saveSettings(); closeSopModal(); }; document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeSopModal(); }); document.addEventListener('click',()=>{if(soundEnabled) ensureAudioContext();},{once:true}); }
 socket.on('new_conversation', c=>{ conversations.unshift(c); renderList(); updateTitle(); beep(); });
@@ -196,7 +276,7 @@ socket.on('conversation_updated', c=>{ const idx=conversations.findIndex(x=>x.id
 socket.on('conversation_deleted', ({id})=>{ conversations=conversations.filter(c=>c.id!==id); if(currentId===id){currentId='';$('chatPanel').classList.add('hidden');$('chatEmpty').classList.remove('hidden');} renderList(); updateTitle(); });
 socket.on('message', m=>{ if(currentId===m.conversation_id){ renderMessage(m); if(m.sender_type==='visitor') api('/api/conversations/'+currentId+'/read',{method:'POST'}); } else if(m.sender_type==='visitor') beep(); });
 window.clearReplyAttachment=clearReplyAttachment;
-window.archiveConv=archiveConv; window.trashConv=trashConv; window.restoreConv=restoreConv; window.deleteConv=deleteConv; window.markRead=markRead; window.markUnread=markUnread; window.refreshAll=refreshAll;
+window.archiveConv=archiveConv; window.trashConv=trashConv; window.restoreConv=restoreConv; window.deleteConv=deleteConv; window.markRead=markRead; window.markUnread=markUnread; window.testPush=testPush; window.refreshAll=refreshAll;
 init();
 </script>
 </body>

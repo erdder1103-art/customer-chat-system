@@ -861,6 +861,27 @@ app.post('/api/conversations/:id/unread', requireLogin, (req, res) => {
   res.json({ ok: true });
 });
 
+
+app.post('/api/conversations/:id/push-test', requireLogin, async (req, res) => {
+  const convo = convoById(req.params.id);
+
+  if (!convo) {
+    return res.status(404).json({ error: 'not found' });
+  }
+
+  try {
+    const result = await sendPushToConversation(req.params.id, {
+      title: publicConfig().title || '客服訊息通知',
+      body: '你有新訊息通知',
+      url: notificationUrlForConversation(convo)
+    });
+
+    res.json({ ok: true, ...result, status: updateConversationPushStatus(req.params.id) });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: String(e && e.message ? e.message : e) });
+  }
+});
+
 app.post('/api/conversations/:id/archive', requireLogin, (req, res) => {
   if (!convoById(req.params.id)) {
     return res.status(404).json({ error: 'not found' });
