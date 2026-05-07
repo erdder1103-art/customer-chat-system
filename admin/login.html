@@ -6,46 +6,41 @@
   <title>客服登入</title>
   <style>
     *{box-sizing:border-box}
-    body{margin:0;font-family:Arial,"Noto Sans TC",sans-serif;background:#101010;color:#fff;display:grid;place-items:center;height:100vh}
-    .card{width:360px;max-width:90vw;background:#181818;border:1px solid #d9a72e;border-radius:18px;padding:28px;box-shadow:0 12px 40px #0008}
-    h1{margin:0 0 20px;color:#f4c542;font-size:26px}
-    label{display:block;font-size:13px;color:#ddd;margin:12px 0 6px}
-    input,button{width:100%;padding:13px;border-radius:10px;border:0;font-size:16px}
-    input{background:#252525;color:#fff;border:1px solid #333;outline:none}
-    input:focus{border-color:#f4c542;box-shadow:0 0 0 2px rgba(244,197,66,.12)}
-    button{background:#f4c542;color:#111;font-weight:bold;cursor:pointer;margin-top:16px}
-    button:active{transform:scale(.99)}
-    .err{color:#ff7b7b;min-height:22px;margin-top:12px;font-size:14px}
-    .hint{font-size:12px;color:#888;line-height:1.5;margin-top:12px}
+    body{margin:0;font-family:Arial,"Noto Sans TC",sans-serif;background:radial-gradient(circle at top,rgba(244,197,66,.12),transparent 34%),#0d0d0d;color:#fff;display:grid;place-items:center;height:100vh;padding:18px}
+    .card{width:390px;max-width:94vw;background:linear-gradient(180deg,#1b1b1b,#111);border:1px solid rgba(244,197,66,.55);border-radius:22px;padding:30px;box-shadow:0 20px 70px #000a}
+    h1{margin:0 0 6px;color:#f4c542;font-size:26px;font-weight:1000}.sub{margin:0 0 20px;color:#aaa;font-size:13px;line-height:1.5}
+    label{display:block;font-size:13px;color:#ddd;margin:12px 0 6px;font-weight:800}
+    input,button,select{width:100%;padding:13px;border-radius:12px;border:0;font-size:16px}
+    input,select{background:#252525;color:#fff;border:1px solid #3a3a3a;outline:none}
+    input:focus,select:focus{border-color:#f4c542;box-shadow:0 0 0 3px rgba(244,197,66,.12)}
+    button{background:#f4c542;color:#111;font-weight:1000;cursor:pointer;margin-top:16px}button:active{transform:scale(.99)}
+    .err{color:#ff7b7b;min-height:22px;margin-top:12px;font-size:14px}.hint{font-size:12px;color:#888;line-height:1.5;margin-top:12px}
+    .remember{display:flex;align-items:center;gap:8px;margin-top:12px;color:#ccc;font-size:13px}.remember input{width:18px;height:18px;padding:0;accent-color:#f4c542}
+    .saved-row{display:none}.saved-row.show{display:block}.mini{margin-top:8px;background:#242424;color:#ddd;border:1px solid #444}.mini:hover{border-color:#f4c542}
   </style>
 </head>
 <body>
   <div class="card">
     <h1>客服後台登入</h1>
+    <p class="sub">不再固定預設 admin；只會帶入你自己曾成功登入並選擇記住的帳號。</p>
 
-    <form id="loginForm" autocomplete="off">
+    <form id="loginForm" autocomplete="on">
+      <div id="savedWrap" class="saved-row">
+        <label for="savedUsers">選擇已記住帳號</label>
+        <select id="savedUsers"></select>
+      </div>
+
       <label for="u">帳號</label>
-      <input
-        id="u"
-        name="ccs_admin_user"
-        placeholder="請輸入帳號"
-        value=""
-        autocomplete="off"
-        autocapitalize="off"
-        spellcheck="false">
+      <input id="u" name="username" placeholder="請輸入帳號" autocomplete="username" autocapitalize="off" spellcheck="false">
 
       <label for="p">密碼</label>
-      <input
-        id="p"
-        name="ccs_admin_pass"
-        placeholder="請輸入密碼"
-        type="password"
-        value=""
-        autocomplete="new-password">
+      <input id="p" name="password" placeholder="請輸入密碼" type="password" autocomplete="current-password">
 
+      <label class="remember"><input id="rememberUser" type="checkbox" checked> 記住此帳號，下次可直接選取</label>
       <button type="submit">登入</button>
+      <button class="mini" id="forgetBtn" type="button">清除已記住帳號</button>
       <div class="err" id="err"></div>
-      <div class="hint">如果瀏覽器仍自動帶入帳密，那是瀏覽器記住密碼，不是系統預設值。</div>
+      <div class="hint">瀏覽器若自行保存密碼，仍可能自動帶入；這屬於瀏覽器密碼管理，不是系統寫死預設帳密。</div>
     </form>
   </div>
 
@@ -54,42 +49,47 @@
     const u = document.getElementById('u');
     const p = document.getElementById('p');
     const err = document.getElementById('err');
+    const savedUsers = document.getElementById('savedUsers');
+    const savedWrap = document.getElementById('savedWrap');
+    const rememberUser = document.getElementById('rememberUser');
+    const forgetBtn = document.getElementById('forgetBtn');
+    const KEY = 'ccs_saved_admin_users';
 
-    // 防止舊版 HTML 或瀏覽器快取殘留預設值
-    window.addEventListener('pageshow', function () {
-      if (u.value === 'admin') u.value = '';
-      if (p.value === '123456') p.value = '';
-    });
+    function getSaved(){
+      try { return JSON.parse(localStorage.getItem(KEY) || '[]').filter(Boolean); }
+      catch(e){ return []; }
+    }
+    function setSaved(list){ localStorage.setItem(KEY, JSON.stringify([...new Set(list)].slice(0,8))); }
+    function renderSaved(){
+      const list = getSaved();
+      savedUsers.innerHTML = '';
+      if (!list.length) { savedWrap.classList.remove('show'); return; }
+      savedWrap.classList.add('show');
+      list.forEach(name => {
+        const opt = document.createElement('option'); opt.value = name; opt.textContent = name; savedUsers.appendChild(opt);
+      });
+      if (!u.value) u.value = list[0];
+    }
+    savedUsers.addEventListener('change', () => { u.value = savedUsers.value; p.focus(); });
+    forgetBtn.addEventListener('click', () => { setSaved([]); renderSaved(); u.value=''; p.value=''; err.textContent='已清除本機記住的帳號'; });
+    renderSaved();
 
     form.addEventListener('submit', async function (e) {
       e.preventDefault();
       err.textContent = '';
-
       const username = u.value.trim();
       const password = p.value;
-
-      if (!username || !password) {
-        err.textContent = '請輸入帳號與密碼';
-        return;
-      }
-
+      if (!username || !password) { err.textContent = '請輸入帳號與密碼'; return; }
       try {
         const r = await fetch('/api/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password })
         });
-
         if (r.ok) {
-          location.href = '/admin/';
-          return;
+          if (rememberUser.checked) setSaved([username, ...getSaved()]);
+          location.href = '/admin/'; return;
         }
-
-        const j = await r.json().catch(() => ({}));
-        err.textContent = j.error || '登入失敗';
-      } catch (error) {
-        err.textContent = '連線失敗，請稍後再試';
-      }
+        const j = await r.json().catch(() => ({})); err.textContent = j.error || '登入失敗';
+      } catch (error) { err.textContent = '連線失敗，請稍後再試'; }
     });
   </script>
 </body>

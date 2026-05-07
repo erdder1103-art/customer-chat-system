@@ -132,6 +132,19 @@ CREATE TABLE IF NOT EXISTS push_subscriptions (
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS push_broadcasts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  sender_login TEXT DEFAULT '',
+  target_type TEXT DEFAULT '',
+  target_value TEXT DEFAULT '',
+  title TEXT DEFAULT '',
+  body TEXT DEFAULT '',
+  matched_count INTEGER DEFAULT 0,
+  sent_count INTEGER DEFAULT 0,
+  failed_count INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 `);
 
 function ensureColumn(table, column, definition) {
@@ -214,6 +227,10 @@ setDefault('quick_replies', JSON.stringify([
 ]));
 
 setDefault('agent_display_names', 'admin=小编小雅\nadmin1=小编朵朵\nadmin2=小编小葵');
+setDefault('greeting_rules', JSON.stringify([
+  { group: '', title: '全部-在線招呼語', online: true, offline: false, content: '你好,领取10U体验金吗？' },
+  { group: '', title: '全部-離線招呼語', online: false, offline: true, content: '小编在线时间10-22点，目前非工作时间,请留下TG联系方式我们会与你联系协助你领取体验金。如没TG请留下你的通讯方式。' }
+]));
 
 const COPY_VERSION = 'f1top-v10-1-sop-title-content';
 const currentCopyVersion = db.prepare('SELECT value FROM settings WHERE key=?').get('copy_version');
@@ -475,11 +492,47 @@ function normalizeAgentDisplayNames(value) {
   return String(value || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
 }
 
-function offlineReplyKey() {
+
+function normalizeGreetingRules(value) {
+  let list = [];
+  if (Array.isArray(value)) list = value;
+  else {
+    try { list = JSON.parse(String(value || '[]')); } catch (_) { list = []; }
+  }
+  return list.map(x => {
+    if (!x || typeof x !== 'object') return null;
+    const group = clean(x.group || x.source_group || '', 100).trim();
+    const content = clean(x.content || x.body || x.text || '', 2000).trim();
+    const title = clean(x.title || '', 120).trim() || (group || '全部') + '-' + (x.offline ? '離線招呼語' : '在線招呼語');
+    const online = !!x.online;
+    const offline = !!x.offline;
+    if (!content || (!online && !offline)) return null;
+    return { group, title, online, offline, content };
+  }).filter(Boolean);
+}
+
+function greetingFor(status, sourceGroup) {
+  const group = String(sourceGroup || '').trim();
+  const rules = normalizeGreetingRules(setting('greeting_rules'));
+  const isOffline = status === 'offline';
+  const exact = rules.find(r => r.group === group && (isOffline ? r.offline : r.online));
+  if (exact) return exact.content;
+  const fallback = rules.find(r => !r.group && (isOffline ? r.offline : r.online));
+  if (fallback) return fallback.content;
+  return isOffline
+    ? (setting('offline_greeting') || '目前非工作时间,请留下联系方式我们会与你联系协助你领取体验金。')
+    : (setting('online_greeting') || '你好,领取10U体验金吗？');
+}
+
+function offlineReplyKeyFor(sourceGroup) {
   return crypto
     .createHash('sha1')
-    .update(`${setting('support_status')}|${setting('offline_greeting')}`)
+    .update(`${setting('support_status')}|${sourceGroup || ''}|${greetingFor('offline', sourceGroup)}`)
     .digest('hex');
+}
+
+function offlineReplyKey() {
+  return offlineReplyKeyFor('');
 }
 
 function insertSystemMessage(conversationId, body) {
@@ -505,7 +558,9 @@ function insertSystemMessage(conversationId, body) {
 
 function insertInitialGreeting(conversationId) {
   const status = setting('support_status') || 'online';
-  const body = status === 'offline' ? setting('offline_greeting') : setting('online_greeting');
+  const convo = convoById(conversationId);
+  const group = convo ? (convo.source_group || '') : '';
+  const body = greetingFor(status, group);
 
   const msg = insertSystemMessage(conversationId, body);
 
@@ -514,7 +569,7 @@ function insertInitialGreeting(conversationId) {
       UPDATE conversations
       SET offline_auto_reply_key=?
       WHERE id=?
-    `).run(offlineReplyKey(), conversationId);
+    `).run(offlineReplyKeyFor(group), conversationId);
   }
 
   return msg;
@@ -527,11 +582,12 @@ function maybeInsertOfflineAutoReply(conversationId) {
 
   if (!convo) return null;
 
-  const key = offlineReplyKey();
+  const group = convo.source_group || '';
+  const key = offlineReplyKeyFor(group);
 
   if (convo.offline_auto_reply_key === key) return null;
 
-  const msg = insertSystemMessage(conversationId, setting('offline_greeting'));
+  const msg = insertSystemMessage(conversationId, greetingFor('offline', group));
 
   db.prepare(`
     UPDATE conversations
@@ -581,6 +637,7 @@ function publicConfig() {
       setting('offline_greeting') ||
       '目前非工作时间,请留下联系方式我们会与你联系协助你领取体验金。',
     quick_replies: quickReplies,
+    greeting_rules: normalizeGreetingRules(setting('greeting_rules')),
     agent_display_names: setting('agent_display_names') || '',
     agent_display_names_text: setting('agent_display_names') || '',
     vapid_public_key: VAPID_KEYS.publicKey
@@ -666,6 +723,7 @@ app.patch('/api/settings', requireLogin, (req, res) => {
     'online_greeting',
     'offline_greeting',
     'quick_replies',
+    'greeting_rules',
     'agent_display_names'
   ];
 
@@ -701,6 +759,10 @@ app.patch('/api/settings', requireLogin, (req, res) => {
           : [];
 
         setSetting(k, JSON.stringify(list));
+      } else if (k === 'greeting_rules') {
+        const list = normalizeGreetingRules(req.body[k]);
+        setSetting(k, JSON.stringify(list));
+        db.prepare("UPDATE conversations SET offline_auto_reply_key='' WHERE folder!='trash'").run();
       } else if (k === 'agent_display_names') {
         setSetting(k, clean(normalizeAgentDisplayNames(req.body[k]), 5000));
       } else if (k === 'offline_greeting') {
@@ -722,6 +784,62 @@ app.patch('/api/settings', requireLogin, (req, res) => {
   res.json({ ok: true, settings: publicConfig() });
 });
 
+
+
+app.post('/api/push/broadcast', requireLogin, async (req, res) => {
+  const targetType = ['all','source_group','unreplied','conversation'].includes(req.body.target_type)
+    ? req.body.target_type
+    : 'all';
+  const targetValue = clean(req.body.target_value || '', 120);
+  const title = clean(req.body.title || publicConfig().title || '客服訊息通知', 120).trim();
+  const body = clean(req.body.body || '', 500).trim();
+  const ids = Array.isArray(req.body.conversation_ids) ? req.body.conversation_ids.map(x => clean(x, 120)).filter(Boolean) : [];
+
+  if (!body) return res.status(400).json({ ok: false, error: '請輸入群發內容' });
+
+  const whereParts = ["c.folder!='trash'"];
+  const params = [];
+
+  if (targetType === 'source_group') {
+    whereParts.push('c.source_group=?');
+    params.push(targetValue);
+  } else if (targetType === 'unreplied') {
+    whereParts.push("(SELECT sender_type FROM messages WHERE conversation_id=c.id ORDER BY id DESC LIMIT 1)='visitor'");
+  } else if (targetType === 'conversation') {
+    if (!ids.length) return res.status(400).json({ ok: false, error: '沒有選擇客戶' });
+    whereParts.push(`c.id IN (${ids.map(() => '?').join(',')})`);
+    params.push(...ids);
+  }
+
+  const rows = db.prepare(`
+    SELECT c.*
+    FROM conversations c
+    WHERE ${whereParts.join(' AND ')}
+    ORDER BY c.updated_at DESC
+  `).all(...params);
+
+  let sent = 0;
+  let failed = 0;
+  let pushEnabled = 0;
+
+  for (const c of rows) {
+    const result = await sendPushToConversation(c.id, {
+      title,
+      body,
+      url: notificationUrlForConversation(c)
+    });
+    if (result.sent > 0) pushEnabled += 1;
+    sent += result.sent;
+    failed += result.failed;
+  }
+
+  db.prepare(`
+    INSERT INTO push_broadcasts (sender_login, target_type, target_value, title, body, matched_count, sent_count, failed_count, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?)
+  `).run(req.session.user.username, targetType, targetValue, title, body, rows.length, sent, failed, nowIso());
+
+  res.json({ ok: true, matched: rows.length, push_enabled: pushEnabled, sent, failed });
+});
 
 
 app.post('/api/upload', (req, res) => {
@@ -875,6 +993,11 @@ app.post('/api/conversations/:id/push-test', requireLogin, async (req, res) => {
       body: '你有新訊息通知',
       url: notificationUrlForConversation(convo)
     });
+
+    if (result.sent > 0) {
+      const note = insertSystemMessage(req.params.id, '【系統】已發送測試推播通知。');
+      if (note) io.to(req.params.id).emit('message', note);
+    }
 
     res.json({ ok: true, ...result, status: updateConversationPushStatus(req.params.id) });
   } catch (e) {
