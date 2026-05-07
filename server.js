@@ -112,6 +112,7 @@ CREATE TABLE IF NOT EXISTS messages (
   attachment_type TEXT DEFAULT '',
   attachment_mime TEXT DEFAULT '',
   attachment_size INTEGER DEFAULT 0,
+  internal_only INTEGER DEFAULT 0,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -200,6 +201,7 @@ ensureColumn('messages', 'attachment_name', "TEXT DEFAULT ''");
 ensureColumn('messages', 'attachment_type', "TEXT DEFAULT ''");
 ensureColumn('messages', 'attachment_mime', "TEXT DEFAULT ''");
 ensureColumn('messages', 'attachment_size', 'INTEGER DEFAULT 0');
+ensureColumn('messages', 'internal_only', 'INTEGER DEFAULT 0');
 
 db.prepare("UPDATE conversations SET folder='inbox' WHERE folder IS NULL OR folder='' OR folder NOT IN ('inbox','archive','trash')").run();
 db.prepare("UPDATE conversations SET unread_count=0 WHERE unread_count IS NULL").run();
@@ -340,6 +342,26 @@ function normalizeAttachment(input) {
     attachment_mime: clean(a.attachment_mime || a.mime || '', 120),
     attachment_size: Number(a.attachment_size || a.size || 0) || 0
   };
+}
+
+
+function groupAliases(value) {
+  const v = String(value || '').trim();
+  if (!v) return [];
+  if (v === '__adA__' || v === '廣告A' || v === '广告A' || v === '官方-广告' || v === '-官方-广告') {
+    return ['廣告A', '广告A', '官方-广告', '-官方-广告'];
+  }
+  if (v === '__adB__' || v === '廣告B' || v === '广告B' || v === '华-广告' || v === '-华-广告') {
+    return ['廣告B', '广告B', '华-广告', '-华-广告'];
+  }
+  return [v];
+}
+
+function normalizeGroupLabel(value) {
+  const v = String(value || '').trim();
+  if (['廣告A','广告A','官方-广告','-官方-广告','__adA__'].includes(v)) return '官方-广告';
+  if (['廣告B','广告B','华-广告','-华-广告','__adB__'].includes(v)) return '华-广告';
+  return v || '未分類';
 }
 
 function setting(key) {
@@ -515,7 +537,8 @@ function greetingFor(status, sourceGroup) {
   const group = String(sourceGroup || '').trim();
   const rules = normalizeGreetingRules(setting('greeting_rules'));
   const isOffline = status === 'offline';
-  const exact = rules.find(r => r.group === group && (isOffline ? r.offline : r.online));
+  const aliases = groupAliases(group);
+  const exact = rules.find(r => aliases.includes(String(r.group || '').trim()) && (isOffline ? r.offline : r.online));
   if (exact) return exact.content;
   const fallback = rules.find(r => !r.group && (isOffline ? r.offline : r.online));
   if (fallback) return fallback.content;
@@ -535,14 +558,15 @@ function offlineReplyKey() {
   return offlineReplyKeyFor('');
 }
 
-function insertSystemMessage(conversationId, body) {
+function insertSystemMessage(conversationId, body, options = {}) {
   const text = String(body || '').trim();
+  const internalOnly = options && options.internalOnly ? 1 : 0;
 
   if (!text) return null;
 
   const info = db.prepare(`
-    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, internal_only, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     conversationId,
     'agent',
@@ -550,9 +574,36 @@ function insertSystemMessage(conversationId, body) {
     'system',
     text,
     '', '', '', '', 0,
+    internalOnly,
     nowIso()
   );
 
+  return db.prepare('SELECT * FROM messages WHERE id=?').get(info.lastInsertRowid);
+}
+
+function insertAgentTextMessage(conversationId, body, agentLogin) {
+  const text = String(body || '').trim();
+  if (!text) return null;
+  const login = String(agentLogin || '').trim() || 'system';
+  const displayName = login === 'system' ? '系统公告' : agentDisplayName(login);
+  const info = db.prepare(`
+    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, internal_only, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+  `).run(
+    conversationId,
+    'agent',
+    displayName,
+    login,
+    text,
+    '', '', '', '', 0,
+    0,
+    nowIso()
+  );
+  db.prepare(`
+    UPDATE conversations
+    SET last_agent=?, last_agent_display=?, updated_at=?
+    WHERE id=?
+  `).run(login, displayName, nowIso(), conversationId);
   return db.prepare('SELECT * FROM messages WHERE id=?').get(info.lastInsertRowid);
 }
 
@@ -801,8 +852,9 @@ app.post('/api/push/broadcast', requireLogin, async (req, res) => {
   const params = [];
 
   if (targetType === 'source_group') {
-    whereParts.push('c.source_group=?');
-    params.push(targetValue);
+    const aliases = groupAliases(targetValue);
+    whereParts.push(`c.source_group IN (${aliases.map(() => '?').join(',')})`);
+    params.push(...aliases);
   } else if (targetType === 'unreplied') {
     whereParts.push("(SELECT sender_type FROM messages WHERE conversation_id=c.id ORDER BY id DESC LIMIT 1)='visitor'");
   } else if (targetType === 'conversation') {
@@ -822,13 +874,20 @@ app.post('/api/push/broadcast', requireLogin, async (req, res) => {
   let failed = 0;
   let pushEnabled = 0;
 
+  const senderLogin = req.session.user && req.session.user.username ? req.session.user.username : 'system';
+
   for (const c of rows) {
     const result = await sendPushToConversation(c.id, {
       title,
       body,
       url: notificationUrlForConversation(c)
     });
-    if (result.sent > 0) pushEnabled += 1;
+    if (result.sent > 0) {
+      pushEnabled += 1;
+      const broadcastMsg = insertAgentTextMessage(c.id, body, senderLogin);
+      if (broadcastMsg) io.to(c.id).emit('message', broadcastMsg);
+      emitConversation(c.id);
+    }
     sent += result.sent;
     failed += result.failed;
   }
@@ -883,8 +942,9 @@ app.get('/api/conversations', requireLogin, (req, res) => {
     if (sourceGroup === '__uncategorized__') {
       whereParts.push("(c.source_group IS NULL OR c.source_group='')");
     } else {
-      whereParts.push('c.source_group=?');
-      params.push(sourceGroup);
+      const aliases = groupAliases(sourceGroup);
+      whereParts.push(`c.source_group IN (${aliases.map(() => '?').join(',')})`);
+      params.push(...aliases);
     }
   }
 
@@ -995,8 +1055,8 @@ app.post('/api/conversations/:id/push-test', requireLogin, async (req, res) => {
     });
 
     if (result.sent > 0) {
-      const note = insertSystemMessage(req.params.id, '【系統】已發送測試推播通知。');
-      if (note) io.to(req.params.id).emit('message', note);
+      insertSystemMessage(req.params.id, '【系統】已發送測試推播通知。', { internalOnly: true });
+      emitConversation(req.params.id);
     }
 
     res.json({ ok: true, ...result, status: updateConversationPushStatus(req.params.id) });
@@ -1246,7 +1306,7 @@ app.get('/api/widget/conversations/:id/messages', (req, res) => {
   const messages = db.prepare(`
     SELECT id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, created_at
     FROM messages
-    WHERE conversation_id=?
+    WHERE conversation_id=? AND (internal_only IS NULL OR internal_only=0)
     ORDER BY id ASC
   `).all(req.params.id);
 
@@ -1268,8 +1328,8 @@ app.post('/api/widget/conversations/:id/messages', (req, res) => {
   }
 
   const info = db.prepare(`
-    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, internal_only, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     req.params.id,
     'visitor',
@@ -1281,6 +1341,7 @@ app.post('/api/widget/conversations/:id/messages', (req, res) => {
     attachment.attachment_type,
     attachment.attachment_mime,
     attachment.attachment_size,
+    0,
     nowIso()
   );
 
@@ -1327,8 +1388,8 @@ app.post('/api/conversations/:id/messages', requireLogin, (req, res) => {
   const displayName = agentDisplayName(agent);
 
   const info = db.prepare(`
-    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, created_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    INSERT INTO messages (conversation_id, sender_type, sender_name, sender_login, body, attachment_url, attachment_name, attachment_type, attachment_mime, attachment_size, internal_only, created_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
   `).run(
     req.params.id,
     'agent',
@@ -1340,6 +1401,7 @@ app.post('/api/conversations/:id/messages', requireLogin, (req, res) => {
     attachment.attachment_type,
     attachment.attachment_mime,
     attachment.attachment_size,
+    0,
     nowIso()
   );
 
