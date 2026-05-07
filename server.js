@@ -12,6 +12,7 @@ const { Server } = require('socket.io');
 const crypto = require('crypto');
 const multer = require('multer');
 const webpush = require('web-push');
+const archiver = require('archiver');
 
 const app = express();
 const server = http.createServer(app);
@@ -233,6 +234,10 @@ setDefault('greeting_rules', JSON.stringify([
   { group: '', title: '全部-在線招呼語', online: true, offline: false, content: '你好,领取10U体验金吗？' },
   { group: '', title: '全部-離線招呼語', online: false, offline: true, content: '小编在线时间10-22点，目前非工作时间,请留下TG联系方式我们会与你联系协助你领取体验金。如没TG请留下你的通讯方式。' }
 ]));
+setDefault('max_image_mb', process.env.MAX_IMAGE_MB || '5');
+setDefault('max_video_mb', process.env.MAX_VIDEO_MB || '30');
+setDefault('max_file_mb', process.env.MAX_FILE_MB || '20');
+setDefault('unreplied_minutes', process.env.UNREPLIED_MINUTES || '10');
 
 const COPY_VERSION = 'f1top-v10-1-sop-title-content';
 const currentCopyVersion = db.prepare('SELECT value FROM settings WHERE key=?').get('copy_version');
@@ -317,7 +322,7 @@ const upload = multer({
     filename: (req, file, cb) => cb(null, safeFileName(file.originalname))
   }),
   limits: {
-    fileSize: Number(process.env.MAX_UPLOAD_SIZE || 25 * 1024 * 1024)
+    fileSize: Number(process.env.MAX_UPLOAD_SIZE || 500 * 1024 * 1024)
   },
   fileFilter: (req, file, cb) => {
     const allowed = [
@@ -342,6 +347,38 @@ function normalizeAttachment(input) {
     attachment_mime: clean(a.attachment_mime || a.mime || '', 120),
     attachment_size: Number(a.attachment_size || a.size || 0) || 0
   };
+}
+
+function settingNumber(key, fallback, min, max) {
+  const n = Number(setting(key));
+  const val = Number.isFinite(n) ? n : fallback;
+  return Math.max(min, Math.min(max, val));
+}
+
+function uploadLimitMbForType(type) {
+  if (type === 'image') return settingNumber('max_image_mb', 5, 1, 100);
+  if (type === 'video') return settingNumber('max_video_mb', 30, 1, 500);
+  return settingNumber('max_file_mb', 20, 1, 200);
+}
+
+function uploadLimitBytesForType(type) {
+  return uploadLimitMbForType(type) * 1024 * 1024;
+}
+
+function unrepliedMinutesValue(raw) {
+  const n = Number(raw !== undefined && raw !== null && raw !== '' ? raw : setting('unreplied_minutes'));
+  if (!Number.isFinite(n)) return 10;
+  return Math.max(0, Math.min(1440, Math.floor(n)));
+}
+
+function addUnrepliedWhere(whereParts, params, minutes) {
+  whereParts.push("(SELECT sender_type FROM messages WHERE conversation_id=c.id AND internal_only=0 ORDER BY id DESC LIMIT 1)='visitor'");
+  const m = unrepliedMinutesValue(minutes);
+  if (m > 0) {
+    const cutoff = new Date(Date.now() - m * 60 * 1000).toISOString();
+    whereParts.push("(SELECT created_at FROM messages WHERE conversation_id=c.id AND internal_only=0 ORDER BY id DESC LIMIT 1) <= ?");
+    params.push(cutoff);
+  }
 }
 
 
@@ -715,7 +752,11 @@ function publicConfig() {
     greeting_rules: normalizeGreetingRules(setting('greeting_rules')),
     agent_display_names: setting('agent_display_names') || '',
     agent_display_names_text: setting('agent_display_names') || '',
-    vapid_public_key: VAPID_KEYS.publicKey
+    vapid_public_key: VAPID_KEYS.publicKey,
+    max_image_mb: uploadLimitMbForType('image'),
+    max_video_mb: uploadLimitMbForType('video'),
+    max_file_mb: uploadLimitMbForType('file'),
+    unreplied_minutes: unrepliedMinutesValue()
   };
 }
 
@@ -799,7 +840,11 @@ app.patch('/api/settings', requireLogin, (req, res) => {
     'offline_greeting',
     'quick_replies',
     'greeting_rules',
-    'agent_display_names'
+    'agent_display_names',
+    'max_image_mb',
+    'max_video_mb',
+    'max_file_mb',
+    'unreplied_minutes'
   ];
 
   allowed.forEach(k => {
@@ -838,6 +883,12 @@ app.patch('/api/settings', requireLogin, (req, res) => {
         const list = normalizeGreetingRules(req.body[k]);
         setSetting(k, JSON.stringify(list));
         db.prepare("UPDATE conversations SET offline_auto_reply_key='' WHERE folder!='trash'").run();
+      } else if (['max_image_mb','max_video_mb','max_file_mb'].includes(k)) {
+        const fallback = k === 'max_video_mb' ? 30 : (k === 'max_image_mb' ? 5 : 20);
+        const max = k === 'max_video_mb' ? 500 : (k === 'max_image_mb' ? 100 : 200);
+        setSetting(k, String(settingNumber(k, Number(req.body[k]) || fallback, 1, max)));
+      } else if (k === 'unreplied_minutes') {
+        setSetting(k, String(unrepliedMinutesValue(req.body[k])));
       } else if (k === 'agent_display_names') {
         setSetting(k, clean(normalizeAgentDisplayNames(req.body[k]), 5000));
       } else if (k === 'offline_greeting') {
@@ -861,6 +912,36 @@ app.patch('/api/settings', requireLogin, (req, res) => {
 
 
 
+app.get('/api/backup/database', requireLogin, (req, res) => {
+  const filename = `chat-backup-${new Date().toISOString().slice(0,10)}.sqlite`;
+  res.download(DB_PATH, filename);
+});
+
+app.get('/api/backup/uploads.zip', requireLogin, (req, res) => {
+  const filename = `uploads-backup-${new Date().toISOString().slice(0,10)}.zip`;
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  const archive = archiver('zip', { zlib: { level: 9 } });
+  archive.on('error', err => {
+    console.error('Upload backup zip failed:', err);
+    if (!res.headersSent) res.status(500).json({ error: 'backup failed' });
+    else res.end();
+  });
+  archive.pipe(res);
+  if (fs.existsSync(UPLOAD_DIR)) archive.directory(UPLOAD_DIR, false);
+  archive.finalize();
+});
+
+app.get('/api/push/broadcasts', requireLogin, (req, res) => {
+  const rows = db.prepare(`
+    SELECT *
+    FROM push_broadcasts
+    ORDER BY id DESC
+    LIMIT 50
+  `).all();
+  res.json(rows);
+});
+
 app.post('/api/push/broadcast', requireLogin, async (req, res) => {
   const targetType = ['all','source_group','unreplied','conversation'].includes(req.body.target_type)
     ? req.body.target_type
@@ -880,7 +961,7 @@ app.post('/api/push/broadcast', requireLogin, async (req, res) => {
     whereParts.push(`c.source_group IN (${aliases.map(() => '?').join(',')})`);
     params.push(...aliases);
   } else if (targetType === 'unreplied') {
-    whereParts.push("(SELECT sender_type FROM messages WHERE conversation_id=c.id ORDER BY id DESC LIMIT 1)='visitor'");
+    addUnrepliedWhere(whereParts, params, req.body.unreplied_minutes);
   } else if (targetType === 'conversation') {
     if (!ids.length) return res.status(400).json({ ok: false, error: '沒有選擇客戶' });
     whereParts.push(`c.id IN (${ids.map(() => '?').join(',')})`);
@@ -933,10 +1014,17 @@ app.post('/api/upload', (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'no file' });
     }
+    const type = attachmentType(req.file.mimetype);
+    const maxBytes = uploadLimitBytesForType(type);
+    const maxMb = uploadLimitMbForType(type);
+    if (req.file.size > maxBytes) {
+      try { fs.unlinkSync(req.file.path); } catch (_) {}
+      return res.status(400).json({ error: `${type === 'image' ? '圖片' : type === 'video' ? '影片' : '檔案'}大小超過限制，最大 ${maxMb}MB` });
+    }
     const data = {
       attachment_url: publicUploadUrl(req, req.file.filename),
       attachment_name: req.file.originalname || req.file.filename,
-      attachment_type: attachmentType(req.file.mimetype),
+      attachment_type: type,
       attachment_mime: req.file.mimetype || '',
       attachment_size: req.file.size || 0
     };
@@ -953,6 +1041,8 @@ app.get('/api/conversations', requireLogin, (req, res) => {
   const readStatus = ['all','unread','read'].includes(req.query.read_status)
     ? req.query.read_status
     : 'all';
+  const unrepliedOnly = String(req.query.unreplied || '') === '1';
+  const unrepliedMinutes = unrepliedMinutesValue(req.query.unreplied_minutes);
 
   const whereParts = [];
   const params = [];
@@ -976,6 +1066,10 @@ app.get('/api/conversations', requireLogin, (req, res) => {
     whereParts.push('c.unread_count > 0');
   } else if (readStatus === 'read') {
     whereParts.push('(c.unread_count IS NULL OR c.unread_count = 0)');
+  }
+
+  if (unrepliedOnly) {
+    addUnrepliedWhere(whereParts, params, unrepliedMinutes);
   }
 
   const where = whereParts.length ? whereParts.join(' AND ') : '1=1';

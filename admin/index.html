@@ -341,6 +341,12 @@
 .select-wrap input{width:18px;height:18px;accent-color:#f4c542;}
 @media(max-width:420px){.batch-actions{grid-template-columns:1fr 1fr!important;}.batch-actions .btn{font-size:13px;}}
 
+
+
+/* ===== V13 ops / backup / limits / unreplied polish ===== */
+.v13-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0 12px}.v13-grid .btn{height:46px;border-radius:15px;font-weight:1000;background:#242424;border:1px solid rgba(244,197,66,.25);color:#fff}.v13-grid .btn:hover{border-color:#f4c542;color:#ffd45a}.backup-cards{display:grid;grid-template-columns:1fr 1fr;gap:12px}.backup-card{background:#1b1b1b;border:1px solid #333;border-radius:15px;padding:14px}.backup-card h4{margin:0 0 6px;color:#ffd45a}.backup-card p{margin:0 0 12px;color:#bbb;font-size:13px;line-height:1.45}.limit-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.limit-grid input{font-weight:900;text-align:center}.broadcast-history{display:grid;gap:8px;max-height:420px;overflow:auto}.broadcast-history-row{background:#1d1d1d;border:1px solid #333;border-radius:12px;padding:10px}.broadcast-history-title{font-weight:900;color:#ffd45a;margin-bottom:4px}.broadcast-history-meta{font-size:12px;color:#aaa;line-height:1.45}.broadcast-history-body{font-size:13px;color:#ddd;margin-top:6px;white-space:pre-wrap;max-height:82px;overflow:auto}.unreplied-chip{font-size:12px;color:#ffd45a;background:#1b160b;border:1px solid rgba(244,197,66,.28);border-radius:999px;padding:7px 9px;display:flex;align-items:center;gap:6px;justify-content:center}.unreplied-chip input{width:18px;height:18px;accent-color:#f4c542}.unreplied-mini{display:grid;grid-template-columns:1fr 90px;gap:8px;align-items:center}.unreplied-mini input{height:40px;text-align:center;font-weight:900}.v13-help{font-size:12px;color:#d6c27a;line-height:1.45;margin-top:6px}.backup-actions{display:grid;gap:8px}.backup-actions .btn{width:100%}
+@media(max-width:760px){.backup-cards,.limit-grid,.v13-grid{grid-template-columns:1fr}.unreplied-mini{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body>
@@ -350,7 +356,7 @@
     <div class="source-tabs"><button class="btn active" data-source-group="">全部聊天</button><button class="btn" data-source-group="__adA__">官方-广告</button><button class="btn" data-source-group="__adB__">华-广告</button><button class="btn" data-source-group="__uncategorized__">未分類</button></div>
     <div class="tabs"><button class="btn active" data-box="inbox">進行中</button><button class="btn" data-box="archive">已派發</button><button class="btn" data-box="trash">垃圾桶</button></div>
     <div id="batchToolbar" class="batch-toolbar hidden"><div class="batch-count">已選 <b id="selectedCount">0</b> 筆</div><div class="batch-actions"><button class="btn" type="button" onclick="batchMarkRead()">標已讀</button><button class="btn" type="button" onclick="batchMarkUnread()">標未讀</button><button class="btn warn" type="button" onclick="batchArchive()">已派發</button><button class="btn danger" type="button" onclick="batchTrash()">刪除</button><button class="btn batch-cancel" type="button" onclick="clearSelection()">取消選取</button></div></div>
-    <div class="filters"><input id="search" placeholder="搜尋姓名 / 來源 / 活動 / 訊息"><div class="filters-row"><select id="statusFilter"><option value="">全部狀態</option><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select><select id="onlineFilter"><option value="">全部在線</option><option value="1">在線</option><option value="0">離線</option></select></div><div><div class="read-filter-label">讀取狀態</div><div class="read-tabs"><button class="btn active" data-read-status="all">全部</button><button class="btn" data-read-status="unread">未讀</button><button class="btn" data-read-status="read">已讀</button></div></div></div>
+    <div class="filters"><input id="search" placeholder="搜尋姓名 / 來源 / 活動 / 訊息"><div class="filters-row"><select id="statusFilter"><option value="">全部狀態</option><option value="open">待處理</option><option value="pending">等待客戶</option><option value="closed">已結束</option></select><select id="onlineFilter"><option value="">全部在線</option><option value="1">在線</option><option value="0">離線</option></select></div><div><div class="read-filter-label">讀取狀態</div><div class="read-tabs"><button class="btn active" data-read-status="all">全部</button><button class="btn" data-read-status="unread">未讀</button><button class="btn" data-read-status="read">已讀</button></div></div><div><div class="read-filter-label">未回覆篩選</div><div class="unreplied-mini"><label class="unreplied-chip"><input id="unrepliedOnlyFilter" type="checkbox">只看未回覆</label><input id="unrepliedMinutesFilter" type="number" min="0" max="1440" value="10" title="超過幾分鐘"></div></div></div>
     <div id="list" class="list"></div>
   </aside>
   <main class="main">
@@ -401,6 +407,8 @@
       <button class="btn primary sop-open-btn" id="openSopModalBtn" type="button">SOP 話術 <span class="sop-count" id="sopCount">0</span></button>
       <button class="btn primary" id="openAgentModalBtn" type="button">客服名稱</button>
       <button class="btn primary" id="openBroadcastModalBtn" type="button">群組推播</button>
+      <button class="btn primary" id="openOpsModalBtn" type="button">資料備份</button>
+      <button class="btn primary" id="openLimitModalBtn" type="button">上傳限制</button>
     </div>
 
     <div class="hint">招呼語可依官方-广告 / 华-广告設定；群組推播可發送全部、官方-广告、华-广告、未回覆者或目前選定客戶。</div>
@@ -461,12 +469,44 @@
   <div class="sop-modal" role="dialog" aria-modal="true">
     <div class="sop-modal-head"><div><div class="sop-modal-title">群組推播</div><div class="sop-help">只會發給已開啟推播的客戶。</div></div><button class="btn" id="closeBroadcastModalBtn" type="button">關閉</button></div>
     <div class="sop-modal-body broadcast-box">
-      <label>發送對象</label><select id="broadcastTarget"><option value="all">全部</option><option value="adA">官方-广告</option><option value="adB">华-广告</option><option value="unreplied">未回覆者</option><option value="current">目前選定客戶</option></select>
+      <label>發送對象</label><select id="broadcastTarget"><option value="all">全部</option><option value="adA">官方-广告</option><option value="adB">华-广告</option><option value="unreplied">未回覆者</option><option value="current">目前選定客戶</option></select><label>未回覆者門檻（分鐘，0=不限時間）</label><input id="broadcastUnrepliedMinutes" type="number" min="0" max="1440" value="10">
       <label>推播標題</label><input id="broadcastTitle" placeholder="例如：领取10USDT窗口">
       <label>推播內容</label><textarea id="broadcastBody" placeholder="輸入你要群發的內容"></textarea>
-      <div id="broadcastResult" class="broadcast-result hidden"></div>
+      <div id="broadcastResult" class="broadcast-result hidden"></div><button class="btn" id="loadBroadcastHistoryBtn" type="button">查看最近群發紀錄</button><div id="broadcastHistory" class="broadcast-history hidden"></div>
     </div>
     <div class="sop-modal-foot"><button class="btn" id="closeBroadcastModalBtn2" type="button">關閉</button><button class="btn primary" id="sendBroadcastBtn" type="button">送出推播</button></div>
+  </div>
+</div>
+
+
+<div id="opsModalBackdrop" class="modal-backdrop">
+  <div class="sop-modal" role="dialog" aria-modal="true">
+    <div class="sop-modal-head"><div><div class="sop-modal-title">資料備份</div><div class="sop-help">下載資料庫與附件備份。請定期保存到自己的電腦。</div></div><button class="btn" id="closeOpsModalBtn" type="button">關閉</button></div>
+    <div class="sop-modal-body broadcast-box">
+      <div class="backup-cards">
+        <div class="backup-card"><h4>資料庫備份</h4><p>包含聊天紀錄、SOP、招呼語、推播訂閱與設定。</p><div class="backup-actions"><button class="btn primary" id="downloadDbBackupBtn" type="button">下載 chat.sqlite</button></div></div>
+        <div class="backup-card"><h4>附件備份</h4><p>包含圖片、影片、檔案附件。資料多時下載會比較久。</p><div class="backup-actions"><button class="btn primary" id="downloadUploadsBackupBtn" type="button">下載 uploads.zip</button></div></div>
+      </div>
+      <div class="v13-help">備份只會下載，不會刪除線上資料。還原功能建議人工處理，避免誤覆蓋正式資料。</div>
+    </div>
+    <div class="sop-modal-foot"><button class="btn" id="closeOpsModalBtn2" type="button">完成</button></div>
+  </div>
+</div>
+
+<div id="limitModalBackdrop" class="modal-backdrop">
+  <div class="sop-modal" role="dialog" aria-modal="true">
+    <div class="sop-modal-head"><div><div class="sop-modal-title">上傳限制 / 未回覆設定</div><div class="sop-help">限制附件大小，避免 Volume 被塞滿；未回覆門檻會套用在未回覆篩選與群發。</div></div><button class="btn" id="closeLimitModalBtn" type="button">關閉</button></div>
+    <div class="sop-modal-body broadcast-box">
+      <div class="limit-grid">
+        <div><label>圖片最大 MB</label><input id="maxImageMbInput" type="number" min="1" max="100"></div>
+        <div><label>影片最大 MB</label><input id="maxVideoMbInput" type="number" min="1" max="500"></div>
+        <div><label>檔案最大 MB</label><input id="maxFileMbInput" type="number" min="1" max="200"></div>
+      </div>
+      <label>未回覆者門檻（分鐘，0=只要最後一則是客戶訊息就算）</label>
+      <input id="unrepliedMinutesInput" type="number" min="0" max="1440">
+      <div class="v13-help">例如設 10：只有客戶最後訊息超過 10 分鐘且客服未回覆，才會進入未回覆篩選與未回覆群發。</div>
+    </div>
+    <div class="sop-modal-foot"><button class="btn" id="closeLimitModalBtn2" type="button">取消</button><button class="btn primary" id="saveLimitSettingsBtn" type="button">儲存限制設定</button></div>
   </div>
 </div>
 
@@ -756,6 +796,81 @@ function actionsHtml(c){
 }
 async function archiveConv(){ if(currentId&&(await uiConfirm('確定要將這個對話標為已派發？','已派發對話'))){await api('/api/conversations/'+currentId+'/archive',{method:'POST'}); currentId=''; await loadConversations(); $('chatPanel').classList.add('hidden'); $('chatEmpty').classList.remove('hidden'); showToast('對話已派發','success');} }
 window.batchArchive=batchArchive; window.batchTrash=batchTrash; window.batchMarkRead=batchMarkRead; window.batchMarkUnread=batchMarkUnread; window.clearSelection=clearSelection; window.toggleConversationSelect=toggleConversationSelect;
+
+
+/* ===== V13 backup / limits / unreplied enhancements ===== */
+function openOpsModal(){ openModal('opsModalBackdrop'); }
+function closeOpsModal(){ closeModal('opsModalBackdrop'); }
+function openLimitModal(){
+  if($('maxImageMbInput')) $('maxImageMbInput').value = settings && settings.max_image_mb ? settings.max_image_mb : 5;
+  if($('maxVideoMbInput')) $('maxVideoMbInput').value = settings && settings.max_video_mb ? settings.max_video_mb : 30;
+  if($('maxFileMbInput')) $('maxFileMbInput').value = settings && settings.max_file_mb ? settings.max_file_mb : 20;
+  if($('unrepliedMinutesInput')) $('unrepliedMinutesInput').value = settings && settings.unreplied_minutes !== undefined ? settings.unreplied_minutes : 10;
+  openModal('limitModalBackdrop');
+}
+function closeLimitModal(){ closeModal('limitModalBackdrop'); }
+async function saveLimitSettings(){
+  const payload={
+    max_image_mb:$('maxImageMbInput').value,
+    max_video_mb:$('maxVideoMbInput').value,
+    max_file_mb:$('maxFileMbInput').value,
+    unreplied_minutes:$('unrepliedMinutesInput').value
+  };
+  const r=await api('/api/settings',{method:'PATCH',body:JSON.stringify(payload)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok||!j.ok){ showToast(j.error||'限制設定儲存失敗','error'); return; }
+  settings=j.settings;
+  applyV13SettingsToInputs();
+  closeLimitModal();
+  showToast('限制與未回覆設定已儲存','success');
+}
+function applyV13SettingsToInputs(){
+  const m=settings&&settings.unreplied_minutes!==undefined?settings.unreplied_minutes:10;
+  if($('unrepliedMinutesFilter')) $('unrepliedMinutesFilter').value=m;
+  if($('broadcastUnrepliedMinutes')) $('broadcastUnrepliedMinutes').value=m;
+}
+function downloadDbBackup(){ window.open('/api/backup/database','_blank'); }
+function downloadUploadsBackup(){ window.open('/api/backup/uploads.zip','_blank'); }
+async function loadBroadcastHistory(){
+  const box=$('broadcastHistory'); if(!box)return;
+  const r=await api('/api/push/broadcasts');
+  const rows=await r.json().catch(()=>[]);
+  box.classList.remove('hidden');
+  if(!Array.isArray(rows)||!rows.length){ box.innerHTML='<div class="meta">尚無群發紀錄</div>'; return; }
+  box.innerHTML=rows.map(x=>`<div class="broadcast-history-row"><div class="broadcast-history-title">${esc(x.title||'推播')}</div><div class="broadcast-history-meta">時間：${esc(fmt(x.created_at))} ｜ 發送人：${esc(x.sender_login||'-')}<br>對象：${esc(x.target_type||'-')} ${esc(x.target_value||'')} ｜ 符合：${Number(x.matched_count||0)} ｜ 成功：${Number(x.sent_count||0)} ｜ 失敗：${Number(x.failed_count||0)}</div><div class="broadcast-history-body">${esc(x.body||'')}</div></div>`).join('');
+}
+
+const _v13_loadSettings = loadSettings;
+loadSettings = async function(){ await _v13_loadSettings(); applyV13SettingsToInputs(); };
+const _v13_loadConversations = loadConversations;
+loadConversations = async function(){
+  let url='/api/conversations?box='+currentBox+'&source_group='+encodeURIComponent(currentSourceGroup)+'&read_status='+encodeURIComponent(currentReadStatus);
+  if($('unrepliedOnlyFilter') && $('unrepliedOnlyFilter').checked){ url += '&unreplied=1&unreplied_minutes='+encodeURIComponent($('unrepliedMinutesFilter') ? $('unrepliedMinutesFilter').value : (settings&&settings.unreplied_minutes||10)); }
+  const r=await api(url); conversations=await r.json(); renderList(); updateTitle();
+};
+const _v13_sendBroadcast = sendBroadcast;
+sendBroadcast = async function(){
+  const target=$('broadcastTarget').value; const body=$('broadcastBody').value.trim(); if(!body){showToast('請輸入推播內容','warn');return;} let target_type='all', target_value='', conversation_ids=[]; if(target==='adA'){target_type='source_group'; target_value='__adA__';} else if(target==='adB'){target_type='source_group'; target_value='__adB__';} else if(target==='unreplied'){target_type='unreplied';} else if(target==='current'){ if(!currentId){showToast('請先選擇一個客戶','warn');return;} target_type='conversation'; conversation_ids=[currentId]; }
+  const r=await api('/api/push/broadcast',{method:'POST',body:JSON.stringify({target_type,target_value,conversation_ids,title:$('broadcastTitle').value.trim(),body,unreplied_minutes:$('broadcastUnrepliedMinutes')?$('broadcastUnrepliedMinutes').value:undefined})}); const j=await r.json().catch(()=>({})); if(j.ok){ const msg='符合客戶：'+j.matched+'\n已開推播客戶：'+j.push_enabled+'\n成功送出：'+j.sent+'\n失敗：'+j.failed; $('broadcastResult').classList.remove('hidden'); $('broadcastResult').textContent=msg; showToast('群組推播已送出','success'); await loadBroadcastHistory(); } else showToast(j.error||'群發失敗','error');
+};
+const _v13_bind = bind;
+bind = function(){
+  _v13_bind();
+  if($('openOpsModalBtn')) $('openOpsModalBtn').onclick=openOpsModal;
+  if($('closeOpsModalBtn')) $('closeOpsModalBtn').onclick=closeOpsModal;
+  if($('closeOpsModalBtn2')) $('closeOpsModalBtn2').onclick=closeOpsModal;
+  if($('downloadDbBackupBtn')) $('downloadDbBackupBtn').onclick=downloadDbBackup;
+  if($('downloadUploadsBackupBtn')) $('downloadUploadsBackupBtn').onclick=downloadUploadsBackup;
+  if($('openLimitModalBtn')) $('openLimitModalBtn').onclick=openLimitModal;
+  if($('closeLimitModalBtn')) $('closeLimitModalBtn').onclick=closeLimitModal;
+  if($('closeLimitModalBtn2')) $('closeLimitModalBtn2').onclick=closeLimitModal;
+  if($('saveLimitSettingsBtn')) $('saveLimitSettingsBtn').onclick=saveLimitSettings;
+  if($('loadBroadcastHistoryBtn')) $('loadBroadcastHistoryBtn').onclick=loadBroadcastHistory;
+  if($('unrepliedOnlyFilter')) $('unrepliedOnlyFilter').addEventListener('change', loadConversations);
+  if($('unrepliedMinutesFilter')) $('unrepliedMinutesFilter').addEventListener('change', loadConversations);
+  ['opsModalBackdrop','limitModalBackdrop'].forEach(id=>{ if($(id)) $(id).onclick=e=>{ if(e.target===$(id)) closeModal(id); }; });
+};
+window.openOpsModal=openOpsModal; window.openLimitModal=openLimitModal; window.loadBroadcastHistory=loadBroadcastHistory;
 
 init();
 </script>
