@@ -175,15 +175,15 @@ function forceSetting(key, value) {
 setDefault('support_status', process.env.SUPPORT_STATUS || 'online');
 
 setDefault('quick_replies', JSON.stringify([
-  '您好，请问您的会员账号是多少？',
-  '请问您目前遇到什么问题？',
-  '请稍等，我帮您查询一下。',
-  '目前活动优惠已收到，我帮您确认适合的方案。'
+  { title: '詢問會員帳號', content: '您好，请问您的会员账号是多少？' },
+  { title: '詢問問題', content: '请问您目前遇到什么问题？' },
+  { title: '稍等查詢', content: '请稍等，我帮您查询一下。' },
+  { title: '確認優惠', content: '目前活动优惠已收到，我帮您确认适合的方案。' }
 ]));
 
 setDefault('agent_display_names', 'admin=小编小雅\nadmin1=小编朵朵\nadmin2=小编小葵');
 
-const COPY_VERSION = 'f1top-v9-sop-links-greetings-visible';
+const COPY_VERSION = 'f1top-v10-1-sop-title-content';
 const currentCopyVersion = db.prepare('SELECT value FROM settings WHERE key=?').get('copy_version');
 
 if (!currentCopyVersion || currentCopyVersion.value !== COPY_VERSION) {
@@ -454,7 +454,20 @@ app.patch('/api/settings', requireLogin, (req, res) => {
         }
       } else if (k === 'quick_replies') {
         const list = Array.isArray(req.body[k])
-          ? req.body[k].map(x => clean(x, 300)).filter(Boolean)
+          ? req.body[k].map(x => {
+              if (typeof x === 'string') {
+                const content = clean(x, 1000).trim();
+                return content ? { title: content.slice(0, 18), content } : null;
+              }
+
+              if (x && typeof x === 'object') {
+                const content = clean(x.content || x.body || x.text || '', 1500).trim();
+                const title = clean(x.title || x.name || '', 80).trim() || content.slice(0, 18);
+                return content ? { title, content } : null;
+              }
+
+              return null;
+            }).filter(Boolean)
           : [];
 
         setSetting(k, JSON.stringify(list));
