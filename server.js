@@ -269,6 +269,13 @@ function attachmentType(mime) {
   return 'file';
 }
 
+function publicUploadUrl(req, filename) {
+  const proto = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+  const host = req.headers['x-forwarded-host'] || req.get('host');
+  if (!host) return `/uploads/${filename}`;
+  return `${proto}://${host}/uploads/${filename}`;
+}
+
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, cb) => cb(null, UPLOAD_DIR),
@@ -572,7 +579,7 @@ app.post('/api/upload', (req, res) => {
       return res.status(400).json({ error: 'no file' });
     }
     const data = {
-      attachment_url: `/uploads/${req.file.filename}`,
+      attachment_url: publicUploadUrl(req, req.file.filename),
       attachment_name: req.file.originalname || req.file.filename,
       attachment_type: attachmentType(req.file.mimetype),
       attachment_mime: req.file.mimetype || '',

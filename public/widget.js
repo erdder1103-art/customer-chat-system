@@ -367,7 +367,14 @@
   .ccs-attach img{max-width:100%;border-radius:10px;display:block;}
   .ccs-attach video{max-width:100%;border-radius:10px;display:block;background:#000;}
   .ccs-attach a{color:#4da3ff;text-decoration:underline;word-break:break-all;}
-  .ccs-file-name{font-size:12px;opacity:.8;margin-top:4px;word-break:break-all;}
+  .ccs-file-name{display:none;}
+  #ccs-file-preview{display:none;flex:0 0 auto;padding:8px 10px;background:#111;border-top:1px solid #333;color:#f4c542;font-size:12px;}
+  #ccs-file-preview.show{display:block;}
+  .ccs-preview-card{display:flex;align-items:center;gap:10px;}
+  .ccs-preview-img{width:68px;height:68px;object-fit:cover;border-radius:10px;border:1px solid #444;}
+  .ccs-preview-video{width:110px;height:68px;object-fit:cover;border-radius:10px;background:#000;border:1px solid #444;}
+  .ccs-preview-file{max-width:190px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#ddd;background:#222;border:1px solid #444;border-radius:8px;padding:8px;}
+  .ccs-preview-remove{border:0;background:#333;color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;}
 
   @media (max-width: 768px){
     #ccs-box{
@@ -419,6 +426,8 @@
 
       <div id="ccs-msgs"></div>
 
+      <div id="ccs-file-preview"></div>
+
       <div id="ccs-input">
         <input id="ccs-file" type="file" accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip" style="display:none" />
         <button id="ccs-file-btn" type="button" title="上传图片/文件">＋</button>
@@ -435,6 +444,7 @@
   const msgs = document.getElementById('ccs-msgs');
   const fileInput = document.getElementById('ccs-file');
   const fileBtn = document.getElementById('ccs-file-btn');
+  const filePreview = document.getElementById('ccs-file-preview');
   const input = document.getElementById('ccs-text');
   const send = document.getElementById('ccs-send');
   const closeBtn = document.getElementById('ccs-close');
@@ -471,17 +481,42 @@
   }
 
 
+  function absoluteAttachmentUrl(url) {
+    const raw = String(url || '').trim();
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) return raw;
+    if (raw.startsWith('//')) return location.protocol + raw;
+    if (raw.startsWith('/')) return baseUrl + raw;
+    return baseUrl + '/' + raw.replace(/^\/+/, '');
+  }
+
+  function isImageAttachment(a) {
+    const type = String(a.attachment_type || '').toLowerCase();
+    const mime = String(a.attachment_mime || '').toLowerCase();
+    const url = String(a.attachment_url || '').toLowerCase().split('?')[0];
+    return type === 'image' || mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(url);
+  }
+
+  function isVideoAttachment(a) {
+    const type = String(a.attachment_type || '').toLowerCase();
+    const mime = String(a.attachment_mime || '').toLowerCase();
+    const url = String(a.attachment_url || '').toLowerCase().split('?')[0];
+    return type === 'video' || mime.startsWith('video/') || /\.(mp4|webm|mov|m4v)$/i.test(url);
+  }
+
   function attachmentHtml(a) {
     if (!a || !a.attachment_url) return '';
-    const url = a.attachment_url;
+    const url = absoluteAttachmentUrl(a.attachment_url);
     const name = escapeHtml(a.attachment_name || '附件');
-    const type = a.attachment_type || '';
-    if (type === 'image') {
-      return `<div class="ccs-attach"><a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${url}" alt="${name}" /></a><div class="ccs-file-name">${name}</div></div>`;
+
+    if (isImageAttachment(a)) {
+      return `<div class="ccs-attach"><a href="${url}" target="_blank" rel="noopener noreferrer"><img src="${url}" alt="" loading="lazy" /></a></div>`;
     }
-    if (type === 'video') {
-      return `<div class="ccs-attach"><video src="${url}" controls playsinline></video><div class="ccs-file-name"><a href="${url}" target="_blank" rel="noopener noreferrer">${name}</a></div></div>`;
+
+    if (isVideoAttachment(a)) {
+      return `<div class="ccs-attach"><video src="${url}" controls playsinline preload="metadata"></video></div>`;
     }
+
     return `<div class="ccs-attach"><a href="${url}" target="_blank" rel="noopener noreferrer">📎 ${name}</a></div>`;
   }
 
@@ -691,13 +726,46 @@
   closeBtn.onclick = closeChat;
   overlay.onclick = closeChat;
 
+  function clearFilePreview() {
+    if (fileInput) fileInput.value = '';
+    if (filePreview) {
+      filePreview.classList.remove('show');
+      filePreview.innerHTML = '';
+    }
+    input.placeholder = '请输入您的问题...';
+  }
+
+  function updateFilePreview() {
+    const f = fileInput.files && fileInput.files[0];
+    if (!f || !filePreview) {
+      clearFilePreview();
+      return;
+    }
+    const type = f.type && f.type.startsWith('image/') ? 'image' : (f.type && f.type.startsWith('video/') ? 'video' : 'file');
+    let preview = '';
+    if (type === 'image') {
+      const url = URL.createObjectURL(f);
+      preview = '<img class="ccs-preview-img" src="' + url + '" alt="圖片預覽" onload="setTimeout(()=>URL.revokeObjectURL(this.src),500)">';
+    } else if (type === 'video') {
+      const url = URL.createObjectURL(f);
+      preview = '<video class="ccs-preview-video" src="' + url + '" controls playsinline onloadeddata="setTimeout(()=>URL.revokeObjectURL(this.src),500)"></video>';
+    } else {
+      preview = '<div class="ccs-preview-file">📎 ' + escapeHtml(f.name) + '</div>';
+    }
+    filePreview.classList.add('show');
+    filePreview.innerHTML = '<div class="ccs-preview-card"><div>已選擇附件，按發送後上傳</div>' + preview + '<button class="ccs-preview-remove" type="button" id="ccs-clear-file">移除</button></div>';
+    const clearBtn = document.getElementById('ccs-clear-file');
+    if (clearBtn) clearBtn.onclick = clearFilePreview;
+    input.placeholder = '可輸入文字後送出';
+  }
+
   async function submit() {
     const body = input.value.trim();
     const file = fileInput.files && fileInput.files[0];
     if (!body && !file) return;
 
     input.value = '';
-    input.placeholder = '请输入您的问题...';
+    if (!file) input.placeholder = '请输入您的问题...';
 
     await ensureConversation();
 
@@ -709,7 +777,7 @@
         alert('上传失败：' + (e.message || '请稍后再试'));
         return;
       } finally {
-        fileInput.value = '';
+        clearFilePreview();
       }
     }
 
@@ -729,10 +797,7 @@
 
   fileBtn.onclick = () => fileInput.click();
 
-  fileInput.addEventListener('change', () => {
-    const f = fileInput.files && fileInput.files[0];
-    if (f) input.placeholder = '已選擇：' + f.name + '，可輸入文字後送出';
-  });
+  fileInput.addEventListener('change', updateFilePreview);
 
   send.onclick = submit;
 
