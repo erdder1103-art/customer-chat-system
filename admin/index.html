@@ -453,6 +453,13 @@ html,body{overflow:hidden!important;background:#0b0b0b!important}
 @media(max-width:1080px){.app.fb-layout{grid-template-columns:72px 330px minmax(470px,1fr)!important}.fb-brand,.fb-rail-label,.fb-text{display:none!important}.fb-rail{padding:14px 10px!important;align-items:center!important}.btn.fb-nav{width:50px!important;height:50px!important;padding:0!important;justify-content:center!important}.fb-ico{width:32px!important;height:32px!important}.fb-rail-head{border-bottom:0!important;padding-bottom:0!important}.fb-source,.fb-box{gap:10px!important}}
 @media(max-width:860px){.app.fb-layout{grid-template-columns:1fr!important}.fb-rail{position:fixed!important;top:0!important;left:0!important;bottom:0!important;width:230px!important;z-index:100002!important;transform:translateX(-104%)!important;transition:transform .22s ease!important;align-items:stretch!important}.fb-layout.rail-open-mobile .fb-rail{transform:translateX(0)!important}.fb-layout.rail-open-mobile::after{content:'';position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:100001!important}.fb-brand,.fb-rail-label,.fb-text{display:block!important}.btn.fb-nav{width:100%!important;height:46px!important;padding:0 12px!important;justify-content:flex-start!important}.fb-list-panel{display:none!important}.fb-chat-main{grid-column:1!important}.fb-rail-mini{display:inline-flex!important}.settings{width:min(390px,calc(100vw - 18px))!important}}
 
+
+
+/* ===== V13.4 unread filter/reminder fix ===== */
+.empty-list-note{margin:18px 14px;padding:18px 14px;border:1px dashed rgba(244,197,66,.32);border-radius:16px;color:#d8c784;background:rgba(244,197,66,.06);font-size:14px;font-weight:800;text-align:center;line-height:1.45}
+.read-tabs .btn.active{background:#f4c542!important;color:#111!important;border-color:#f4c542!important;box-shadow:0 0 0 2px rgba(244,197,66,.16)!important}
+.item.unread-item{box-shadow:inset 4px 0 0 #e83d3d!important}
+
 </style>
 </head>
 <body>
@@ -927,13 +934,29 @@ function updateSoundButton(){
 }
 function renderList(){
   const q=$('search').value.toLowerCase(); const st=$('statusFilter').value; const on=$('onlineFilter').value; const list=$('list'); list.innerHTML='';
-  conversations.filter(c=>{ const hay=[c.visitor_name,c.source_title,c.source_campaign,c.source_group,c.source_label,c.last_message,c.ip_country_zh,c.ip_city,c.device_model].join(' ').toLowerCase(); if(q && !hay.includes(q)) return false; if(st && c.status!==st) return false; if(on!=='' && String(c.visitor_online)!==on) return false; return true; }).forEach(c=>{
+  const visible = conversations.filter(c=>{
+    const hay=[c.visitor_name,c.source_title,c.source_campaign,c.source_group,c.source_label,c.last_message,c.ip_country_zh,c.ip_city,c.device_model].join(' ').toLowerCase();
+    const unread=Number(c.unread_count||0)>0;
+    if(q && !hay.includes(q)) return false;
+    if(st && c.status!==st) return false;
+    if(on!=='' && String(c.visitor_online)!==on) return false;
+    if(currentReadStatus==='unread' && !unread) return false;
+    if(currentReadStatus==='read' && unread) return false;
+    return true;
+  });
+  visible.forEach(c=>{
     const div=document.createElement('div'); const unread=Number(c.unread_count||0)>0; const checked=selectedIds.has(c.id);
     div.className='item '+(unread?'unread-item ':'')+(c.id===currentId?'active ':'')+(checked?'selected':'');
     div.onclick=()=>openConversation(c.id);
     div.innerHTML=`<label class="select-wrap" onclick="event.stopPropagation()"><input type="checkbox" ${checked?'checked':''} onchange="toggleConversationSelect(event,'${esc(c.id)}')"></label><div class="item-title"><span class="item-main-title">${esc(c.visitor_name||'訪客')} <span class="pill ${c.visitor_online?'':'off'}">${c.visitor_online?'在線':'離線'}</span></span>${c.unread_count?`<span class="unread">${c.unread_count}</span>`:''}</div><div class="source-line"><span class="source-badge">【${esc(sourceGroupLabel(c))}】${esc(sourceShortLabel(c))}</span> <span class="push-pill ${pushLabel(c).cls}">${pushLabel(c).text}</span></div><div class="snippet">${esc(c.last_message||'')}</div><div class="meta">${fmt(c.updated_at)}</div>`;
     list.appendChild(div);
   });
+  if(!visible.length){
+    const empty=document.createElement('div');
+    empty.className='empty-list-note';
+    empty.textContent=currentReadStatus==='unread'?'目前沒有未讀訊息':'目前沒有符合條件的對話';
+    list.appendChild(empty);
+  }
   updateBatchToolbar();
 }
 function actionsHtml(c){
@@ -991,9 +1014,18 @@ const _v13_loadSettings = loadSettings;
 loadSettings = async function(){ await _v13_loadSettings(); applyV13SettingsToInputs(); };
 const _v13_loadConversations = loadConversations;
 loadConversations = async function(){
-  let url='/api/conversations?box='+currentBox+'&source_group='+encodeURIComponent(currentSourceGroup)+'&read_status='+encodeURIComponent(currentReadStatus);
-  if($('unrepliedOnlyFilter') && $('unrepliedOnlyFilter').checked){ url += '&unreplied=1&unreplied_minutes='+encodeURIComponent($('unrepliedMinutesFilter') ? $('unrepliedMinutesFilter').value : (settings&&settings.unreplied_minutes||10)); }
-  const r=await api(url); conversations=await r.json(); renderList(); updateTitle();
+  // V13.4 fix: always load the full list for the selected source/box,
+  // then apply unread/read filtering in renderList().
+  // This keeps unread reminders visible and prevents unread tab from appearing empty
+  // because of stale server-side read_status state or opening a conversation.
+  let url='/api/conversations?box='+currentBox+'&source_group='+encodeURIComponent(currentSourceGroup)+'&read_status=all';
+  if($('unrepliedOnlyFilter') && $('unrepliedOnlyFilter').checked){
+    url += '&unreplied=1&unreplied_minutes='+encodeURIComponent($('unrepliedMinutesFilter') ? $('unrepliedMinutesFilter').value : (settings&&settings.unreplied_minutes||10));
+  }
+  const r=await api(url);
+  conversations=await r.json();
+  renderList();
+  updateTitle();
 };
 const _v13_sendBroadcast = sendBroadcast;
 sendBroadcast = async function(){
