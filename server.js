@@ -1138,7 +1138,7 @@ app.post('/api/conversations/:id/read', requireLogin, (req, res) => {
     return res.status(404).json({ error: 'not found' });
   }
 
-  db.prepare('UPDATE conversations SET unread_count=0 WHERE id=?').run(req.params.id);
+  db.prepare('UPDATE conversations SET unread_count=0, updated_at=? WHERE id=?').run(nowIso(), req.params.id);
 
   emitConversation(req.params.id);
 
@@ -1524,7 +1524,7 @@ app.post('/api/widget/conversations/:id/messages', (req, res) => {
     UPDATE conversations
     SET visitor_online=1,
         visitor_last_seen=?,
-        unread_count=unread_count+1,
+        unread_count=COALESCE(unread_count,0)+1,
         folder=CASE WHEN folder='trash' THEN 'trash' ELSE 'inbox' END,
         updated_at=?
     WHERE id=?

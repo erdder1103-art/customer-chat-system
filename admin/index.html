@@ -460,6 +460,12 @@ html,body{overflow:hidden!important;background:#0b0b0b!important}
 .read-tabs .btn.active{background:#f4c542!important;color:#111!important;border-color:#f4c542!important;box-shadow:0 0 0 2px rgba(244,197,66,.16)!important}
 .item.unread-item{box-shadow:inset 4px 0 0 #e83d3d!important}
 
+
+/* ===== V13.5 LINE-like unread badge polish ===== */
+.unread{background:linear-gradient(180deg,#ff4b4b,#d71920)!important;color:#fff!important;border:2px solid #111!important;box-shadow:0 0 0 2px rgba(255,65,65,.22),0 4px 12px rgba(0,0,0,.45)!important;min-width:24px!important;height:24px!important;font-size:12px!important;font-weight:1000!important;padding:0 7px!important;}
+.item.unread-item{background:linear-gradient(90deg,rgba(232,61,61,.16),#191919 38%)!important;border-left:4px solid #ff4b4b!important;}
+.item.unread-item .snippet{color:#fff!important;font-weight:800!important;}
+
 </style>
 </head>
 <body>
@@ -825,7 +831,7 @@ function syncGreetingFallback(){ const online=(greetingRules.find(x=>!x.group&&x
 async function loadSettings(){ const r=await api('/api/settings'); settings=await r.json(); $('supportStatus').value=settings.support_status||'online'; $('widgetTitle').value=settings.title||''; updateStatusUI(); updateTitlePreview(); $('onlineGreeting').value=settings.online_greeting||''; $('offlineGreeting').value=settings.offline_greeting||''; greetingRules=normalizeGreetingRules(settings.greeting_rules||[]); if(!greetingRules.length){ greetingRules=normalizeGreetingRules([{group:'',title:'全部-在線招呼語',online:true,content:$('onlineGreeting').value},{group:'',title:'全部-離線招呼語',offline:true,content:$('offlineGreeting').value}]); } quickReplyItems=normalizeSopList(settings.quick_replies); syncSopHiddenField(); $('agentDisplayNames').value=settings.agent_display_names_text || settings.agent_display_names || ''; renderQuick(); renderSopEditor(); renderGreetingEditor(); renderAgentEditor(); }
 async function saveSettings(){ syncGreetingFallback(); syncAgentHidden(); const payload={support_status:$('supportStatus').value, widget_title:$('widgetTitle').value, online_greeting:$('onlineGreeting').value, offline_greeting:$('offlineGreeting').value, greeting_rules:greetingRules, quick_replies:quickReplyItems.map(x=>({title:String(x.title||'').trim(),content:String(x.content||'').trim(),attachment_url:x.attachment_url||'',attachment_name:x.attachment_name||'',attachment_type:x.attachment_type||'',attachment_mime:x.attachment_mime||'',attachment_size:x.attachment_size||0})).filter(x=>x.content||x.attachment_url), agent_display_names:$('agentDisplayNames').value}; const r=await api('/api/settings',{method:'PATCH',body:JSON.stringify(payload)}); const j=await r.json(); settings=j.settings; if(settings.support_status&&$('supportStatus')) $('supportStatus').value=settings.support_status; if(settings.title&&$('widgetTitle')) $('widgetTitle').value=settings.title; updateStatusUI(); updateTitlePreview(); greetingRules=normalizeGreetingRules(settings.greeting_rules||greetingRules); $('agentDisplayNames').value=settings.agent_display_names_text || settings.agent_display_names || ''; quickReplyItems=normalizeSopList(settings.quick_replies); syncSopHiddenField(); renderQuick(); renderSopEditor(); renderGreetingEditor(); renderAgentEditor(); showToast('客服設定已儲存','success'); }
 async function loadConversations(){ const qs=new URLSearchParams({box:currentBox,read_status:currentReadStatus}); if(currentSourceGroup) qs.set('source_group',currentSourceGroup); const r=await api('/api/conversations?'+qs.toString()); conversations=await r.json(); renderList(); updateTitle(); }
-function renderList(){ const q=$('search').value.toLowerCase(); const st=$('statusFilter').value; const on=$('onlineFilter').value; const list=$('list'); list.innerHTML=''; conversations.filter(c=>{ const hay=[c.visitor_name,c.source_title,c.source_campaign,c.source_group,c.source_label,c.last_message,c.ip_country_zh,c.ip_city,c.device_model].join(' ').toLowerCase(); if(q && !hay.includes(q)) return false; if(st && c.status!==st) return false; if(on!=='' && String(c.visitor_online)!==on) return false; return true; }).forEach(c=>{ const div=document.createElement('div'); const unread=Number(c.unread_count||0)>0; div.className='item '+(unread?'unread-item ':'')+(c.id===currentId?'active':''); div.onclick=()=>openConversation(c.id); div.innerHTML=`<div class="item-title"><span class="item-main-title">${esc(c.visitor_name||'訪客')} <span class="pill ${c.visitor_online?'':'off'}">${c.visitor_online?'在線':'離線'}</span></span>${c.unread_count?`<span class="unread">${c.unread_count}</span>`:''}</div><div class="source-line"><span class="source-badge">【${esc(sourceGroupLabel(c))}】${esc(sourceShortLabel(c))}</span> <span class="push-pill ${pushLabel(c).cls}">${pushLabel(c).text}</span></div><div class="snippet">${esc(c.last_message||'')}</div><div class="meta">${fmt(c.updated_at)}</div>`; list.appendChild(div); }); }
+function renderList(){ const q=$('search').value.toLowerCase(); const st=$('statusFilter').value; const on=$('onlineFilter').value; const list=$('list'); list.innerHTML=''; conversations.filter(c=>{ const hay=[c.visitor_name,c.source_title,c.source_campaign,c.source_group,c.source_label,c.last_message,c.ip_country_zh,c.ip_city,c.device_model].join(' ').toLowerCase(); if(q && !hay.includes(q)) return false; if(st && c.status!==st) return false; if(on!=='' && String(c.visitor_online)!==on) return false; return true; }).forEach(c=>{ const div=document.createElement('div'); const unread=Number(c.unread_count||0)>0; div.className='item '+(unread?'unread-item ':'')+(c.id===currentId?'active':''); div.onclick=()=>openConversation(c.id); div.innerHTML=`<div class="item-title"><span class="item-main-title">${esc(c.visitor_name||'訪客')} <span class="pill ${c.visitor_online?'':'off'}">${c.visitor_online?'在線':'離線'}</span></span>${Number(c.unread_count||0)>0?`<span class="unread">${Number(c.unread_count||0)}</span>`:''}</div><div class="source-line"><span class="source-badge">【${esc(sourceGroupLabel(c))}】${esc(sourceShortLabel(c))}</span> <span class="push-pill ${pushLabel(c).cls}">${pushLabel(c).text}</span></div><div class="snippet">${esc(c.last_message||'')}</div><div class="meta">${fmt(c.updated_at)}</div>`; list.appendChild(div); }); }
 async function openConversation(id){ currentId=id; renderedIds.clear(); socket.emit('join',id); await api('/api/conversations/'+id+'/read',{method:'POST'}); const r=await api('/api/conversations/'+id); const j=await r.json(); $('chatEmpty').classList.add('hidden'); $('chatPanel').classList.remove('hidden'); renderConversation(j.conversation,j.messages); await loadConversations(); }
 function renderConversation(c,msgs){ $('convTitle').textContent=c.visitor_name||'訪客'; const push=pushLabel(c); $('convSub').innerHTML=`ID: ${esc(c.id)} ｜ 建立：${esc(fmt(c.created_at))} ｜ 最後上線：${esc(fmt(c.visitor_last_seen))} ｜ <span class="push-pill ${push.cls}">${push.text}</span>`; $('convActions').innerHTML=actionsHtml(c); $('convInfo').innerHTML=infoHtml(c); const box=$('msgs'); box.innerHTML=''; msgs.forEach(renderMessage); box.scrollTop=box.scrollHeight; }
 function actionsHtml(c){ if(c.folder==='trash') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="deleteConv()">永久刪除</button>`; if(c.folder==='archive') return `<button class="btn" onclick="restoreConv()">還原</button><button class="btn danger" onclick="trashConv()">刪除</button>`; return `<button class="btn" onclick="markRead()">標記已讀</button><button class="btn" onclick="markUnread()">標記未讀</button><button class="btn" onclick="testPush()">測試推播</button><button class="btn warn" onclick="archiveConv()">封存</button><button class="btn danger" onclick="trashConv()">刪除</button><button class="btn primary" onclick="refreshAll()">刷新</button>`; }
@@ -893,7 +899,7 @@ function bind(){ document.querySelectorAll('[data-box]').forEach(b=>b.onclick=()
 socket.on('new_conversation', c=>{ conversations.unshift(c); renderList(); updateTitle(); beep(); });
 socket.on('conversation_updated', c=>{ const idx=conversations.findIndex(x=>x.id===c.id); const old=idx>=0?conversations[idx]:null; const sourceOk=!currentSourceGroup || (currentSourceGroup==='__uncategorized__' ? !(c.source_group||'') : c.source_group===currentSourceGroup); const readOk=currentReadStatus==='all' || (currentReadStatus==='unread' ? Number(c.unread_count||0)>0 : Number(c.unread_count||0)===0); const boxOk=(c.folder===currentBox || currentBox==='all'); if(boxOk && sourceOk && readOk){ if(idx>=0) conversations[idx]=c; else conversations.unshift(c); } else if(idx>=0) conversations.splice(idx,1); renderList(); updateTitle(); if(old && Number(c.unread_count||0)>Number(old.unread_count||0) && c.last_sender_type==='visitor') beep(); if(currentId===c.id){ $('convSub').textContent=`ID: ${c.id} ｜ 建立：${fmt(c.created_at)} ｜ 最後上線：${fmt(c.visitor_last_seen)}`; $('convInfo').innerHTML=infoHtml(c); } });
 socket.on('conversation_deleted', ({id})=>{ conversations=conversations.filter(c=>c.id!==id); if(currentId===id){currentId='';$('chatPanel').classList.add('hidden');$('chatEmpty').classList.remove('hidden');} renderList(); updateTitle(); });
-socket.on('message', m=>{ if(currentId===m.conversation_id){ renderMessage(m); if(m.sender_type==='visitor') api('/api/conversations/'+currentId+'/read',{method:'POST'}); } else if(m.sender_type==='visitor') beep(); });
+socket.on('message', m=>{ if(currentId===m.conversation_id){ renderMessage(m); if(m.sender_type==='visitor') beep(); } else if(m.sender_type==='visitor') beep(); });
 window.clearReplyAttachment=clearReplyAttachment;
 window.archiveConv=archiveConv; window.trashConv=trashConv; window.restoreConv=restoreConv; window.deleteConv=deleteConv; window.markRead=markRead; window.markUnread=markUnread; window.testPush=testPush; window.refreshAll=refreshAll;
 
@@ -948,7 +954,7 @@ function renderList(){
     const div=document.createElement('div'); const unread=Number(c.unread_count||0)>0; const checked=selectedIds.has(c.id);
     div.className='item '+(unread?'unread-item ':'')+(c.id===currentId?'active ':'')+(checked?'selected':'');
     div.onclick=()=>openConversation(c.id);
-    div.innerHTML=`<label class="select-wrap" onclick="event.stopPropagation()"><input type="checkbox" ${checked?'checked':''} onchange="toggleConversationSelect(event,'${esc(c.id)}')"></label><div class="item-title"><span class="item-main-title">${esc(c.visitor_name||'訪客')} <span class="pill ${c.visitor_online?'':'off'}">${c.visitor_online?'在線':'離線'}</span></span>${c.unread_count?`<span class="unread">${c.unread_count}</span>`:''}</div><div class="source-line"><span class="source-badge">【${esc(sourceGroupLabel(c))}】${esc(sourceShortLabel(c))}</span> <span class="push-pill ${pushLabel(c).cls}">${pushLabel(c).text}</span></div><div class="snippet">${esc(c.last_message||'')}</div><div class="meta">${fmt(c.updated_at)}</div>`;
+    div.innerHTML=`<label class="select-wrap" onclick="event.stopPropagation()"><input type="checkbox" ${checked?'checked':''} onchange="toggleConversationSelect(event,'${esc(c.id)}')"></label><div class="item-title"><span class="item-main-title">${esc(c.visitor_name||'訪客')} <span class="pill ${c.visitor_online?'':'off'}">${c.visitor_online?'在線':'離線'}</span></span>${Number(c.unread_count||0)>0?`<span class="unread">${Number(c.unread_count||0)}</span>`:''}</div><div class="source-line"><span class="source-badge">【${esc(sourceGroupLabel(c))}】${esc(sourceShortLabel(c))}</span> <span class="push-pill ${pushLabel(c).cls}">${pushLabel(c).text}</span></div><div class="snippet">${esc(c.last_message||'')}</div><div class="meta">${fmt(c.updated_at)}</div>`;
     list.appendChild(div);
   });
   if(!visible.length){
@@ -1050,6 +1056,38 @@ bind = function(){
   ['opsModalBackdrop','limitModalBackdrop'].forEach(id=>{ if($(id)) $(id).onclick=e=>{ if(e.target===$(id)) closeModal(id); }; });
 };
 window.openOpsModal=openOpsModal; window.openLimitModal=openLimitModal; window.loadBroadcastHistory=loadBroadcastHistory;
+
+
+/* ===== V13.5 unread core fix =====
+   Customer messages stay unread until the agent intentionally opens the conversation
+   or presses mark read. Socket updates and message rendering no longer auto-clear unread. */
+async function markConversationReadOnce(id){
+  if(!id) return;
+  await api('/api/conversations/'+id+'/read',{method:'POST'});
+}
+openConversation = async function(id){
+  currentId=id;
+  renderedIds.clear();
+  socket.emit('join',id);
+  await markConversationReadOnce(id);
+  const r=await api('/api/conversations/'+id);
+  const j=await r.json();
+  $('chatEmpty').classList.add('hidden');
+  $('chatPanel').classList.remove('hidden');
+  renderConversation(j.conversation,j.messages);
+  await loadConversations();
+};
+refreshAll = async function(){
+  await loadConversations();
+  if(currentId){
+    const r=await api('/api/conversations/'+currentId);
+    if(r.ok){
+      const j=await r.json();
+      renderConversation(j.conversation,j.messages);
+    }
+  }
+};
+window.refreshAll=refreshAll;
 
 init();
 
